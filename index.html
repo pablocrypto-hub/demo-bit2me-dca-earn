@@ -3,32 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bit2me Pro - Simulación DCA + Ejecuciones + Gráfico Real</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- 1. INFRAESTRUCTURA: Cargamos TradingView Lightweight Charts desde CDN -->
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Bit2me Pro - Simulación DCA + Earn</title>
+    <!-- Los gráficos y los iconos se renderizan con código nativo incluido en este archivo.
+         Así el dashboard no depende de librerías CDN ni de la caché del navegador. -->
     <style>
         :root { --bg-dark: #0b1426; --bg-panel: #131b2f; --bg-card: #1c263c; --text-main: #ffffff; --text-muted: #8b99af; --accent-blue: #0066ff; --accent-green: #00d676; --accent-red: #ff4a68; --border-color: #2a354d; }
         body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; }
+        .fa-solid, .fa-regular { display: inline-block; width: 1em; font-style: normal; text-align: center; }
+        .fa-retweet::before { content: '↻'; }
+        .fa-pen::before { content: '✎'; }
+        .fa-play::before { content: '▶'; }
+        .fa-trash::before { content: '⌫'; }
+        .fa-spinner::before { content: '◌'; }
+        .fa-circle-info::before { content: 'ⓘ'; }
+        .fa-clock::before { content: '◷'; }
+        .fa-circle-nodes::before { content: '●'; }
+        .fa-triangle-exclamation::before { content: '⚠'; }
+        .fa-circle-pause::before { content: '⏸'; }
+        .fa-arrow-right-arrow-left::before { content: '⇄'; }
+        .fa-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
         
         /* SIDEBAR */
         .sidebar { width: 270px; background-color: #03040b; border-right: 1px solid var(--border-color); padding: 25px 20px; display: flex; flex-direction: column; color: #fff; z-index: 10; }
         .sidebar h2 { text-align: center; font-size: 22px; margin: 0 0 25px 0; font-weight: 700; }
         .btn-create-bot { background-color: #4f00ff; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; margin-bottom: 25px; width: 100%; transition: 0.2s;}
-        .btn-create-bot:hover { opacity: 0.9; }
-        .bot-card { background-color: #192033; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+        .btn-create-bot:hover { opacity: 0.9; transform: translateY(-1px); }
+        .bots-list { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding: 2px; }
+        .bot-card { background-color: #192033; border: 1px solid transparent; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: border-color .2s, transform .2s, box-shadow .2s; }
+        .bot-card:hover { transform: translateY(-1px); border-color: #405070; }
+        .bot-card.active { border-color: #6438ff; box-shadow: 0 0 0 2px rgba(79, 0, 255, .18); }
+        .bot-card:focus-visible { outline: 2px solid #7f5bff; outline-offset: 2px; }
         .bot-card-content { padding: 15px; }
         .bot-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .bot-card-title { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14px; }
         .status-badge { background-color: #4a341b; color: #f7a859; font-size: 11px; padding: 3px 10px; border-radius: 12px; font-weight: 700; }
         .status-badge.completed { background-color: rgba(0, 214, 118, 0.2); color: #00d676; }
+        .status-badge.scheduled { background-color: rgba(0, 168, 255, 0.16); color: #54bfff; }
+        .status-badge.finished { background-color: rgba(168, 85, 247, .17); color: #c49aff; }
         .bot-card-row { display: flex; justify-content: space-between; font-size: 12px; color: #fff; margin-bottom: 6px; }
         .bot-card-row span:first-child { color: #8b99af; }
         .bot-card-footer { background-color: #242c46; padding: 12px 15px; display: flex; justify-content: space-between; font-size: 13px; }
         
         /* MAIN CONTENT */
-        .main-content { flex: 1; display: flex; flex-direction: column; padding: 20px 30px; overflow-y: auto; }
+        .main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 20px 30px; overflow-y: auto; }
         .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0; }
         .bot-title h2 { margin: 0; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
         .bot-title .profit { color: var(--accent-green); font-size: 18px; font-weight: bold; margin-left: 15px; }
@@ -39,24 +57,130 @@
         
         .charts-wrapper { display: flex; flex-direction: column; gap: 20px; margin-bottom: 20px; flex-shrink: 0;}
         .chart-box { background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; position: relative; }
-        .chart-title { font-size: 14px; font-weight: 600; color: #8b99af; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .chart-title { font-size: 14px; font-weight: 600; color: #8b99af; margin-bottom: 10px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+        .chart-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 9px; }
+        .chart-interaction-hint { color: #687792; font-size: 10px; font-weight: 500; white-space: nowrap; }
+        .zoom-controls { display: inline-flex; align-items: center; gap: 3px; padding: 3px; border: 1px solid #2a354d; border-radius: 7px; background: #10182a; }
+        .zoom-controls button { width: 27px; height: 25px; padding: 0; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #b6c1d4; font-size: 15px; line-height: 1; cursor: pointer; }
+        .zoom-controls button:hover { border-color: #4f00ff; background: #252f48; color: #fff; }
+        .zoom-controls button:focus-visible { outline: 2px solid #7f5bff; outline-offset: 1px; }
+        .zoom-level { min-width: 42px; color: #8b99af; font-size: 10px; font-variant-numeric: tabular-nums; text-align: center; }
+        .chart-action-button { width: 33px; height: 31px; padding: 0; border: 1px solid #2a354d; border-radius: 7px; background: #10182a; color: #b6c1d4; font-size: 17px; line-height: 1; cursor: pointer; transition: .18s ease; }
+        .chart-action-button:hover { border-color: #4f00ff; background: #252f48; color: #fff; }
+        .chart-action-button:focus-visible { outline: 2px solid #7f5bff; outline-offset: 2px; }
         
-        /* Contenedor donde se renderizará el gráfico de TradingView modificado */
-        #tv-chart { height: 350px; width: 100%; border-radius: 6px; overflow: hidden; }
+        /* Gráfico autocontenido: Canvas se adapta al tamaño real del panel */
+        #tv-chart { height: 350px; width: 100%; min-width: 0; border-radius: 6px; overflow: hidden; position: relative; background: #131722; }
+        #tv-chart canvas, .portfolio-chart-container canvas { display: block; width: 100%; height: 100%; }
+        .chart-pan-surface { cursor: grab; touch-action: none; user-select: none; }
+        .chart-pan-surface.is-panning { cursor: grabbing; }
+        .chart-tooltip { position: absolute; z-index: 3; display: none; min-width: 135px; padding: 8px 10px; border: 1px solid #2a354d; border-radius: 6px; background: rgba(11, 20, 38, 0.96); color: #d1d4dc; font: 12px/1.45 'Segoe UI', sans-serif; pointer-events: none; box-shadow: 0 6px 18px rgba(0,0,0,.3); }
+        .chart-tooltip.purchase-tooltip { min-width: 146px; padding: 10px 13px; border-color: #2e6377; border-radius: 10px; background: rgba(27, 65, 80, .97); color: #e9f8ff; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.42), 0 0 18px rgba(0,102,255,.14); }
+        .market-empty-state { position: absolute; inset: 0; z-index: 4; display: grid; place-content: center; gap: 8px; padding: 24px; background: #131722; color: #8b99af; text-align: center; pointer-events: none; }
+        .market-empty-state[hidden] { display: none; }
+        .market-empty-state strong { color: #dce6f5; font-size: 14px; }
+        .market-empty-state span { max-width: 440px; font-size: 11px; line-height: 1.5; }
+        .purchase-tooltip strong { display: block; margin-bottom: 2px; color: #fff; font-size: 15px; }
+        .purchase-tooltip .purchase-amount { display: block; color: #b7f4ea; font-size: 13px; }
+        .purchase-tooltip .purchase-detail { display: block; margin-top: 5px; color: #a9bdd0; font-size: 10px; }
+        .pmc-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; min-height: 27px; margin: -2px 0 9px; }
+        .pmc-legend:empty { display: none; }
+        .pmc-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 250px; padding: 5px 8px; border: 1px solid #2a354d; border-radius: 999px; background: #10182a; color: #aebbd0; font-size: 10px; white-space: nowrap; }
+        .pmc-chip.active { border-color: var(--pmc-color); color: #fff; box-shadow: 0 0 0 1px rgba(255,255,255,.08); }
+        .pmc-chip-name { max-width: 128px; overflow: hidden; text-overflow: ellipsis; }
+        .pmc-chip-value { color: var(--pmc-color); font-weight: 800; font-variant-numeric: tabular-nums; }
+        .pmc-swatch { width: 17px; height: 2px; flex: 0 0 auto; border-radius: 2px; background: var(--pmc-color); box-shadow: 0 0 5px var(--pmc-color); }
+        .pmc-overlay-layer { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
+        .bot-pmc-line { position: absolute; height: 0; border-top: 1px dashed currentColor; opacity: .88; }
+        .bot-pmc-line.active { border-top-style: solid; border-top-width: 2px; opacity: 1; animation: averagePricePulse 1.8s ease-in-out infinite; }
+        .bot-pmc-tag { position: absolute; top: -10px; right: -122px; width: 122px; height: 20px; display: flex; align-items: center; justify-content: flex-end; color: currentColor; font: 700 9px/1 'Segoe UI', sans-serif; white-space: nowrap; }
+        .bot-pmc-tag-name { max-width: 49px; padding: 0 5px; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+        .bot-pmc-tag-value { min-width: 66px; padding: 5px 5px; background: var(--pmc-color); color: #fff; font-size: 10px; text-align: center; font-variant-numeric: tabular-nums; }
+        @keyframes averagePricePulse { 0%, 100% { opacity: .76; filter: drop-shadow(0 0 1px rgba(0,102,255,.2)); } 50% { opacity: 1; filter: drop-shadow(0 0 5px rgba(0,102,255,.9)); } }
         
         .portfolio-chart-container { height: 250px; width: 100%; }
+        .portfolio-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin: -3px 0 12px; color: #d1d4dc; font-size: 12px; }
+        .portfolio-legend span { display: inline-flex; align-items: center; gap: 7px; }
+        .legend-line { width: 20px; height: 3px; border-radius: 3px; display: inline-block; }
+        .portfolio-legend .earn-item { color: #ffc35a; font-weight: 700; }
+        .legend-line.earn { height: 4px; background: #ffb020; box-shadow: 0 0 7px rgba(255, 176, 32, .55); }
+        .portfolio-legend .no-earn-item { color: #8ac4ff; font-weight: 650; }
+        .legend-line.no-earn { height: 3px; background: #5aa9ff; box-shadow: 0 0 5px rgba(90, 169, 255, .35); }
+        .legend-line.invested { background: repeating-linear-gradient(90deg, #8b99af 0 5px, transparent 5px 9px); }
+        .portfolio-period { color: #aab6ca; font-size: 11px; font-weight: 500; }
+
+        .chart-box:fullscreen,
+        .chart-box:-webkit-full-screen,
+        .chart-box.is-pseudo-fullscreen { width: 100vw; height: 100vh !important; box-sizing: border-box; margin: 0; padding: 18px; border: 0; border-radius: 0; background: #0b1426; display: flex; flex-direction: column; }
+        .chart-box:fullscreen #tv-chart,
+        .chart-box:-webkit-full-screen #tv-chart,
+        .chart-box.is-pseudo-fullscreen #tv-chart,
+        .chart-box:fullscreen .portfolio-chart-container,
+        .chart-box:-webkit-full-screen .portfolio-chart-container,
+        .chart-box.is-pseudo-fullscreen .portfolio-chart-container { flex: 1; height: auto; min-height: 0; }
+        .chart-box.is-pseudo-fullscreen { position: fixed; inset: 0; z-index: 10000; }
+        body.chart-fullscreen-open { overflow: hidden; }
         
         .api-badge { font-size:12px; padding:4px 8px; border-radius:4px; border: 1px solid #2a354d; color:#fff; background:#192033; }
         .api-badge.offline { background-color: rgba(247, 168, 89, 0.1); color: #f7a859; border-color: #f7a859; font-weight: bold; }
         .api-badge.online { background-color: rgba(0, 214, 118, 0.1); color: #00d676; border-color: #00d676; font-weight: bold; }
         
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; flex-shrink: 0; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; margin-bottom: 30px; flex-shrink: 0; }
         .stat-card { background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; text-align: center; }
         .stat-card h3 { margin: 0 0 10px 0; color: var(--text-muted); font-size: 13px; font-weight: 500; }
         .stat-card p { margin: 0; font-size: 20px; font-weight: bold; }
+        .stat-card.earn-stat { border-color: rgba(38, 166, 154, 0.55); background: linear-gradient(145deg, #131b2f, rgba(38, 166, 154, 0.07)); }
+        .stat-card.earn-stat p { color: #36c9b8; }
+        .stat-card.comparison-stat { border-color: rgba(90, 169, 255, .42); background: linear-gradient(145deg, #131b2f, rgba(90, 169, 255, .06)); }
+        .stat-card.comparison-stat p { color: #8ac4ff; }
+        .stat-card.growth-stat { border-color: rgba(255, 176, 32, .5); background: linear-gradient(145deg, #131b2f, rgba(255, 176, 32, .07)); }
+        .stat-card.growth-stat p { color: #ffbf47; }
+        .stat-note { display: block; min-height: 15px; margin-top: 7px; color: var(--text-muted); font-size: 11px; }
+
+        /* CALCULADORA DE VENTA ESCALONADA */
+        .sell-calculator { margin-bottom: 30px; padding: 20px; border: 1px solid #2a354d; border-radius: 12px; background: linear-gradient(145deg, #111a2d, #131b2f); flex-shrink: 0; }
+        .sell-calculator-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+        .sell-calculator-header h3 { margin: 0 0 6px; color: #fff; font-size: 18px; }
+        .sell-calculator-header p { max-width: 760px; margin: 0; color: #8b99af; font-size: 12px; line-height: 1.5; }
+        .sell-mode-badge { min-width: 88px; padding: 9px 15px; border: 1px solid rgba(255, 93, 99, .45); border-radius: 999px; background: rgba(178, 46, 52, .35); color: #ff777c; font-size: 13px; font-weight: 700; text-align: center; }
+        .sell-input-grid { display: grid; grid-template-columns: repeat(4, minmax(145px, 1fr)); gap: 12px; }
+        .sell-field label { display: block; margin-bottom: 7px; color: #aab6ca; font-size: 12px; }
+        .sell-input-shell { position: relative; }
+        .sell-input-shell input { width: 100%; box-sizing: border-box; padding: 11px 64px 11px 12px; border: 1px solid #2a354d; border-radius: 7px; outline: none; background: #192033; color: #fff; font-size: 14px; font-variant-numeric: tabular-nums; color-scheme: dark; }
+        .sell-input-shell input:focus { border-color: #ff5d63; box-shadow: 0 0 0 2px rgba(255, 93, 99, .09); }
+        .sell-input-shell .sell-unit { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: #8b99af; font-size: 11px; font-weight: 600; pointer-events: none; }
+        .sell-balance-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0; padding: 11px 12px; border-radius: 8px; background: #0f1729; color: #9caac0; font-size: 12px; }
+        .sell-available strong { color: #fff; font-variant-numeric: tabular-nums; }
+        .sell-percent-buttons { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+        .sell-percent-buttons button { padding: 5px 9px; border: 1px solid #34415a; border-radius: 6px; background: #192033; color: #b7c2d5; font-size: 11px; cursor: pointer; }
+        .sell-percent-buttons button:hover { border-color: #ff5d63; color: #fff; }
+        .sell-calculator-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 15px; }
+        .sell-calculate-button { min-width: 190px; padding: 11px 18px; border: 0; border-radius: 7px; background: #b22e34; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; transition: .18s ease; }
+        .sell-calculate-button:hover { background: #ca373e; }
+        .sell-calculator-error { display: none; flex: 1; color: #ff777c; font-size: 12px; }
+        .sell-calculator-error.visible { display: block; }
+        .sell-result-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+        .sell-result-card { padding: 12px; border: 1px solid #2a354d; border-radius: 8px; background: #10182a; }
+        .sell-result-card span { display: block; margin-bottom: 5px; color: #78879f; font-size: 10px; }
+        .sell-result-card strong { color: #fff; font-size: 14px; font-variant-numeric: tabular-nums; }
+        .sell-result-card small { display: block; margin-top: 5px; color: #8b99af; font-size: 10px; font-variant-numeric: tabular-nums; }
+        .sell-result-card.positive { border-color: rgba(0, 214, 118, .4); background: rgba(0, 214, 118, .055); }
+        .sell-result-card.positive strong, .sell-result-card.positive small { color: #38d99b; }
+        .sell-result-card.negative { border-color: rgba(239, 83, 80, .42); background: rgba(239, 83, 80, .055); }
+        .sell-result-card.negative strong, .sell-result-card.negative small { color: #ff777c; }
+        .sell-orders-container { max-height: 330px; overflow: auto; border: 1px solid #2a354d; border-radius: 9px; }
+        .sell-orders-table { width: 100%; border-collapse: collapse; }
+        .sell-orders-table th, .sell-orders-table td { padding: 11px 13px; border-bottom: 1px solid #273249; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+        .sell-orders-table th { position: sticky; top: 0; z-index: 1; background: #192033; color: #8b99af; font-weight: 600; }
+        .sell-orders-table th:first-child, .sell-orders-table td:first-child { text-align: left; }
+        .sell-orders-table tbody tr:last-child td { border-bottom: 0; }
+        .sell-orders-table tbody tr:hover { background: rgba(255, 255, 255, .025); }
+        .sell-order-number { color: #ff777c; font-weight: 700; }
+        .sell-price { color: #fff; font-weight: 700; }
+        .sell-quantity { color: #8ac4ff; }
         
         /* EJECUCIONES SECTION */
-        .executions-section { flex: 1; display: flex; flex-direction: column; }
+        .executions-section { flex: 0 0 auto; display: flex; flex-direction: column; margin-bottom: 30px; }
         .executions-section h3 { margin: 0 0 15px 0; font-size: 18px; font-weight: 600; }
         .next-execution-box { background-color: rgba(0, 168, 255, 0.1); border: 1px solid #00a8ff; color: #00a8ff; padding: 12px 15px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
         .next-execution-box.paused { background-color: rgba(247, 168, 89, 0.1); border-color: #f7a859; color: #f7a859; }
@@ -78,21 +202,26 @@
         
         .exec-amount-btc { color: #fff; font-weight: 600; }
         .exec-amount-fiat { color: var(--text-muted); font-size: 11px; display: block; margin-top: 3px; }
+        .exec-earn { color: #36c9b8; font-size: 11px; display: block; margin-top: 5px; }
+        .badge-earn { margin-top: 6px; padding: 3px 8px; border-radius: 10px; display: block; width: fit-content; color: #36c9b8; background: rgba(38, 166, 154, 0.12); border: 1px solid rgba(38, 166, 154, 0.35); font-size: 10px; font-weight: 700; }
 
         /* RIGHT PANEL */
-        .right-panel { width: 340px; background-color: #131b2f; border-left: 1px solid var(--border-color); padding: 0; overflow-y: auto; display: flex; flex-direction: column; z-index: 10;}
+        .right-panel { width: 340px; background-color: #131b2f; border-left: 1px solid var(--border-color); padding: 0; overflow-y: auto; display: flex; flex-direction: column; z-index: 10; transition: border-color .25s, box-shadow .25s;}
+        .right-panel.creating-bot { border-left-color: #744dff; box-shadow: -10px 0 30px rgba(79, 0, 255, .18); }
         .right-panel-header { padding: 20px; font-size: 18px; font-weight: 600; border-bottom: 1px solid var(--border-color); flex-shrink: 0;}
+        .right-panel.creating-bot .right-panel-header { color: #b9a8ff; background: rgba(79, 0, 255, .08); }
         .right-panel-content { padding: 20px; flex: 1; overflow-y: auto; }
         .form-section-title { font-size: 14px; color: #fff; margin-bottom: 12px; font-weight: 500; }
         .form-group { margin-bottom: 15px; position: relative; }
         .form-group label { display: block; margin-bottom: 8px; color: #8b99af; font-size: 13px; }
         .input-with-icon { position: relative; }
-        .input-with-icon input, .form-group select, .form-group input[type="text"], .form-group input[type="number"] { width: 100%; box-sizing: border-box; background: #192033; border: 1px solid #2a354d; color: white; padding: 10px 12px; border-radius: 6px; font-size: 14px; outline: none; transition: 0.2s;}
+        .input-with-icon input, .form-group select, .form-group input[type="text"], .form-group input[type="number"], .form-group input[type="date"] { width: 100%; box-sizing: border-box; background: #192033; border: 1px solid #2a354d; color: white; padding: 10px 12px; border-radius: 6px; font-size: 14px; outline: none; transition: 0.2s; color-scheme: dark;}
+        .input-with-icon input { padding-right: 66px; }
         .input-with-icon input:focus, .form-group input:focus { border-color: #4f00ff; }
         .input-with-icon input:disabled { background: #131b2f; color: #8b99af; cursor: not-allowed; border-color: #2a354d; }
         .input-suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #8b99af; font-size: 13px; font-weight: 500; }
         .custom-select-wrapper { position: relative; }
-        .custom-select-wrapper::after { content: '\f078'; font-family: "Font Awesome 6 Free"; font-weight: 900; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #8b99af; pointer-events: none; font-size: 12px; }
+        .custom-select-wrapper::after { content: '▾'; font-family: inherit; font-weight: 900; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #8b99af; pointer-events: none; font-size: 12px; }
         .custom-select-wrapper select { appearance: none; padding-right: 30px; cursor: pointer; }
         .input-group-row { display: flex; gap: 10px; margin-bottom: 15px; }
         .input-group-row .form-group { flex: 1; margin-bottom: 0; }
@@ -105,6 +234,17 @@
         .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: #8b99af; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #00d676; }
         input:checked + .slider:before { transform: translateX(20px); background-color: white; }
+
+        .earn-flow { margin: 22px 0 20px; padding: 15px; border: 1px dashed rgba(38, 166, 154, 0.7); border-radius: 10px; background: linear-gradient(145deg, rgba(38, 166, 154, 0.08), rgba(79, 0, 255, 0.06)); }
+        .earn-flow-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+        .earn-flow h4 { display: flex; align-items: center; gap: 8px; margin: 0; color: #36c9b8; font-size: 14px; }
+        .earn-flow > p { margin: 0 0 14px; color: var(--text-muted); font-size: 12px; line-height: 1.45; }
+        .earn-route { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 5px; margin-bottom: 15px; color: #8b99af; font-size: 10px; text-align: center; }
+        .earn-route span { padding: 7px 5px; border: 1px solid #2a354d; border-radius: 6px; background: #131b2f; }
+        .earn-route span:last-child { color: #36c9b8; border-color: rgba(38, 166, 154, 0.45); }
+        .earn-fields { transition: opacity .2s ease; }
+        .earn-fields.is-disabled { opacity: .42; }
+        .earn-helper { margin-top: 10px; color: #65738a; font-size: 10px; line-height: 1.4; }
         
         .panel-footer { padding: 20px; background: #131b2f; border-top: 1px solid var(--border-color); display: flex; gap: 15px; flex-shrink: 0;}
         .btn-cancel, .btn-save { flex: 1; padding: 12px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; border: none; transition: 0.2s;}
@@ -112,24 +252,32 @@
         .btn-cancel:hover { background: #192033; color:#fff;}
         .btn-save { background: #4f00ff; color: white; }
         .btn-save:hover { opacity: 0.9; }
+
+        .field-helper { display: block; margin-top: 7px; color: #65738a; font-size: 10px; line-height: 1.4; }
+
+        @media (max-width: 1250px) {
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .sell-input-grid, .sell-result-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 850px) {
+            .chart-interaction-hint { display: none; }
+            .sell-input-grid, .sell-result-summary { grid-template-columns: 1fr; }
+            .sell-calculator-header { align-items: stretch; flex-direction: column; }
+            .sell-mode-badge { align-self: flex-start; }
+            .sell-calculator-actions { align-items: stretch; flex-direction: column; }
+            .sell-calculate-button { width: 100%; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .bot-pmc-line.active { animation: none; opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
         <h2>Mis bots</h2>
-        <button class="btn-create-bot">Crear bot</button>
-        <div class="bot-card">
-            <div class="bot-card-content">
-                <div class="bot-card-header">
-                    <div class="bot-card-title"><i class="fa-solid fa-retweet"></i> <span id="sidebar-bot-name">DCA Bitcoin Bot</span></div>
-                    <div class="status-badge completed" id="bot-status">Activo</div>
-                </div>
-                <div class="bot-card-row"><span>DCA</span><span id="sidebar-date">--</span></div>
-                <div class="bot-card-row"><span>BTC/USDC</span><span></span></div>
-            </div>
-            <div class="bot-card-footer"><span class="amount" id="sidebar-amount">5 USDC</span><span class="frequency">Cada día</span></div>
-        </div>
+        <button class="btn-create-bot" id="create-bot-button" type="button">＋ Crear bot</button>
+        <div class="bots-list" id="bots-list" aria-label="Bots DCA creados"></div>
     </div>
 
     <div class="main-content">
@@ -146,29 +294,62 @@
 
         <div class="charts-wrapper">
             <!-- Gráfico 1: TradingView Velas Japonesas Modificado -->
-            <div class="chart-box" style="height: auto;">
+            <div class="chart-box" id="price-chart-box" style="height: auto;">
                 <div class="chart-title">
-                    <span>Gráfico de Mercado (Velas Diarias Cerradas BTC/USDC)</span>
-                    <span id="api-status" class="api-badge"><i class="fa-solid fa-spinner fa-spin"></i> Conectando a Binance...</span>
+                    <span>BTC/USDC · Velas diarias desde 01/01/2026</span>
+                    <div class="chart-toolbar">
+                        <span class="chart-interaction-hint">Rueda: zoom · Arrastra: mover</span>
+                        <div class="zoom-controls" aria-label="Zoom del gráfico BTC/USDC">
+                            <button id="price-zoom-out" type="button" aria-label="Alejar gráfico">−</button>
+                            <span id="price-zoom-level" class="zoom-level">100%</span>
+                            <button id="price-zoom-in" type="button" aria-label="Acercar gráfico">+</button>
+                            <button id="price-zoom-reset" type="button" aria-label="Restablecer zoom" title="Restablecer zoom">↺</button>
+                        </div>
+                        <button class="chart-action-button" id="price-fullscreen" type="button" aria-label="Ver gráfico BTC/USDC en pantalla completa" title="Pantalla completa">⛶</button>
+                        <span id="api-status" class="api-badge"><i class="fa-solid fa-spinner fa-spin"></i> Conectando a Binance...</span>
+                    </div>
                 </div>
+                <div id="pmc-legend" class="pmc-legend" aria-label="Precios medios de compra de los bots guardados"></div>
                 <!-- Contenedor donde se renderizará el gráfico -->
                 <div id="tv-chart"></div>
             </div>
             
             <!-- Gráfico 2: Portfolio -->
-            <div class="chart-box" style="height: auto;">
-                <div class="chart-title" style="margin-bottom:15px;">Evolución de la Cartera (Capital Invertido vs Valor BTC)</div>
+            <div class="chart-box" id="portfolio-chart-box" style="height: auto;">
+                <div class="chart-title" style="margin-bottom:15px;">
+                    <span>Evolución de la Cartera: DCA frente a DCA + Earn</span>
+                    <div class="chart-toolbar">
+                        <span id="portfolio-period" class="portfolio-period">Desde el inicio del bot</span>
+                        <span class="chart-interaction-hint">Rueda: zoom · Arrastra: mover</span>
+                        <div class="zoom-controls" aria-label="Zoom del gráfico de cartera">
+                            <button id="portfolio-zoom-out" type="button" aria-label="Alejar gráfico">−</button>
+                            <span id="portfolio-zoom-level" class="zoom-level">100%</span>
+                            <button id="portfolio-zoom-in" type="button" aria-label="Acercar gráfico">+</button>
+                            <button id="portfolio-zoom-reset" type="button" aria-label="Restablecer zoom" title="Restablecer zoom">↺</button>
+                        </div>
+                        <button class="chart-action-button" id="portfolio-fullscreen" type="button" aria-label="Ver evolución de cartera en pantalla completa" title="Pantalla completa">⛶</button>
+                    </div>
+                </div>
+                <div class="portfolio-legend" aria-hidden="true">
+                    <span class="earn-item"><i class="legend-line earn"></i>Valor con Earn</span>
+                    <span class="no-earn-item"><i class="legend-line no-earn"></i>Valor sin Earn</span>
+                    <span><i class="legend-line invested"></i>Capital invertido</span>
+                </div>
                 <div class="portfolio-chart-container"><canvas id="mainChart"></canvas></div>
             </div>
         </div>
 
         <div class="stats-grid">
             <div class="stat-card"><h3>Total invertido</h3><p id="stat-invested">0 USDC</p></div>
-            <div class="stat-card"><h3>Total acumulado</h3><p id="stat-btc">0.000000 BTC</p></div>
+            <div class="stat-card earn-stat"><h3>Saldo BTC total con Earn</h3><p id="stat-btc">0.00000000 BTC</p><span class="stat-note">Wallet + Earn + recompensas</span></div>
+            <div class="stat-card comparison-stat"><h3>Saldo BTC sin Earn</h3><p id="stat-btc-no-earn">0.00000000 BTC</p><span class="stat-note">BTC comprado mediante DCA</span></div>
+            <div class="stat-card growth-stat"><h3>Incremento de BTC gracias a Earn</h3><p id="stat-btc-growth">+0,0000%</p><span class="stat-note" id="stat-btc-growth-absolute">+0.00000000 BTC</span></div>
+            <div class="stat-card earn-stat"><h3>Saldo total en Earn</h3><p id="stat-earn-balance">0.000000 BTC</p><span class="stat-note" id="stat-earn-transfers">0 transferencias</span></div>
+            <div class="stat-card earn-stat"><h3>Recompensas generadas por Earn</h3><p id="stat-earn-rewards">0.00000000 BTC</p><span class="stat-note" id="stat-earn-rewards-usdc">0.00 USDC al precio actual</span></div>
             <div class="stat-card"><h3>Precio medio de compra</h3><p id="stat-avg-price">0.00 USDC</p></div>
             <div class="stat-card"><h3>Total de ejecuciones</h3><p id="stat-executions">0</p></div>
         </div>
-        
+
         <!-- EJECUCIONES SECTION -->
         <div class="executions-section">
             <h3>Ejecuciones</h3>
@@ -195,11 +376,71 @@
                 </div>
             </div>
         </div>
+
+        <section class="sell-calculator" aria-labelledby="sell-calculator-title">
+            <div class="sell-calculator-header">
+                <div>
+                    <h3 id="sell-calculator-title">Calculadora de venta escalonada</h3>
+                    <p>Distribuye el BTC en cantidades prácticamente iguales y coloca los precios de forma simétrica alrededor del precio medio objetivo. La inversión fiat se prorratea según la parte del saldo BTC que vendas para calcular la diferencia porcentual. Los importes son brutos: no incluyen comisiones ni mínimos del exchange.</p>
+                </div>
+                <span class="sell-mode-badge">Vender</span>
+            </div>
+
+            <div class="sell-input-grid">
+                <div class="sell-field">
+                    <label for="sell-target-average">Precio promedio objetivo</label>
+                    <div class="sell-input-shell"><input id="sell-target-average" type="number" min="0.01" step="100" value="100000"><span class="sell-unit">USDC</span></div>
+                </div>
+                <div class="sell-field">
+                    <label for="sell-total-btc">Bitcoin total a vender</label>
+                    <div class="sell-input-shell"><input id="sell-total-btc" type="number" min="0.00000001" step="0.00000001" value="0.01000000"><span class="sell-unit">BTC</span></div>
+                </div>
+                <div class="sell-field">
+                    <label for="sell-order-count">Número de órdenes</label>
+                    <div class="sell-input-shell"><input id="sell-order-count" type="number" min="1" max="50" step="1" value="5"><span class="sell-unit">ÓRD.</span></div>
+                </div>
+                <div class="sell-field">
+                    <label for="sell-order-spacing">Separación entre órdenes</label>
+                    <div class="sell-input-shell"><input id="sell-order-spacing" type="number" min="0" max="50" step="0.1" value="2"><span class="sell-unit">%</span></div>
+                </div>
+            </div>
+
+            <div class="sell-balance-row">
+                <span class="sell-available">Saldo BTC total disponible: <strong id="sell-available-btc">0.00000000 BTC</strong></span>
+                <div class="sell-percent-buttons" aria-label="Porcentaje del saldo a vender">
+                    <button type="button" data-sell-percent="25">25%</button>
+                    <button type="button" data-sell-percent="50">50%</button>
+                    <button type="button" data-sell-percent="75">75%</button>
+                    <button type="button" data-sell-percent="100">100%</button>
+                </div>
+            </div>
+
+            <div class="sell-calculator-actions">
+                <span class="sell-calculator-error" id="sell-calculator-error" role="alert"></span>
+                <button class="sell-calculate-button" id="sell-calculate-button" type="button">Calcular órdenes de venta</button>
+            </div>
+
+            <div class="sell-result-summary" id="sell-result-summary">
+                <div class="sell-result-card"><span>Promedio ponderado resultante</span><strong id="sell-result-average">—</strong></div>
+                <div class="sell-result-card"><span>BTC total distribuido</span><strong id="sell-result-btc">—</strong></div>
+                <div class="sell-result-card"><span>Ingreso bruto estimado</span><strong id="sell-result-usdc">—</strong></div>
+                <div class="sell-result-card"><span>Inversión fiat correspondiente</span><strong id="sell-result-invested">—</strong></div>
+                <div class="sell-result-card" id="sell-result-difference-card"><span>Diferencia bruta frente a inversión</span><strong id="sell-result-difference">—</strong><small id="sell-result-difference-absolute">—</small></div>
+                <div class="sell-result-card"><span>Rango de precios</span><strong id="sell-result-range">—</strong></div>
+            </div>
+
+            <div class="sell-orders-container">
+                <table class="sell-orders-table">
+                    <thead><tr><th>Orden</th><th>Cantidad BTC</th><th>Precio límite</th><th>Total estimado</th></tr></thead>
+                    <tbody id="sell-orders-body"><tr><td colspan="4" style="text-align:center;color:#78879f;">Introduce los datos para calcular la escalera de venta.</td></tr></tbody>
+                </table>
+            </div>
+        </section>
     </div>
 
-    <div class="right-panel">
-        <div class="right-panel-header">Configuración</div>
-        <div class="right-panel-content">
+    <div class="right-panel" id="configuration-panel">
+        <div class="right-panel-header" id="configuration-title">Configuración</div>
+        <div class="right-panel-content" id="configuration-content">
             <div class="form-group"><label>Nombre del bot</label><input type="text" id="input-bot-name" value="DCA Bitcoin Bot"></div>
             
             <div class="form-section-title">Par y cantidad a operar</div>
@@ -208,6 +449,40 @@
             
             <div class="form-section-title">Frecuencia de compra</div>
             <div class="form-group"><label>Frecuencia de tiempo</label><div class="custom-select-wrapper"><select><option>Días</option></select></div></div>
+            <div class="form-group">
+                <label>Inicio de la simulación histórica</label>
+                <input type="date" id="input-start-date" min="2026-01-01" value="2026-01-01">
+                <span class="field-helper">Las compras y la evolución de cartera comienzan visualmente en esta fecha.</span>
+            </div>
+            <div class="form-group">
+                <label>Cierre de la simulación histórica</label>
+                <input type="date" id="input-end-date" min="2026-01-01">
+                <span class="field-helper">Las compras, Earn, métricas y evolución de cartera se calculan hasta esta fecha inclusive.</span>
+            </div>
+
+            <div class="earn-flow">
+                <div class="earn-flow-header">
+                    <h4><i class="fa-solid fa-arrow-right-arrow-left"></i> Automatización con Earn</h4>
+                    <label class="switch" aria-label="Activar transferencia automática a Earn"><input type="checkbox" id="toggle-earn" checked onchange="toggleInputs()"><span class="slider"></span></label>
+                </div>
+                <p>Los BTC comprados se acumulan en Wallet y se transfieren automáticamente a Bit2Me Earn para empezar a generar rendimiento.</p>
+                <div class="earn-route">
+                    <span>Compra DCA</span><b>→</b><span>Wallet</span><b>→</b><span>Earn</span>
+                </div>
+                <div id="earn-fields" class="earn-fields">
+                    <div class="input-group-row">
+                        <div class="form-group">
+                            <label>Rendimiento</label>
+                            <div class="input-with-icon"><input type="number" id="input-apy" value="3.0" min="0" step="0.1"><span class="input-suffix">% APY</span></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Transferir cada</label>
+                            <div class="input-with-icon"><input type="number" id="input-earn-frequency" value="3" min="1" step="1"><span class="input-suffix">días</span></div>
+                        </div>
+                    </div>
+                    <div class="earn-helper">La simulación convierte el APY en una tasa diaria equivalente y reinvierte cada recompensa. Estimación con APY constante y sin comisiones.</div>
+                </div>
+            </div>
             
             <div class="form-section-title" style="margin-top: 20px;">Más personalización (Opcional)</div>
             
@@ -245,156 +520,1502 @@
             </div>
             
         </div>
-        <div class="panel-footer"><button class="btn-cancel">Cancelar</button><button class="btn-save" onclick="runSimulation()">Guardar cambios</button></div>
+        <div class="panel-footer"><button class="btn-cancel" id="cancel-bot-changes" type="button">Cancelar</button><button class="btn-save" id="save-bot-changes" type="button">Guardar cambios</button></div>
     </div>
 
     <script>
-        // Variables globales
+        // Estado compartido del mercado, los gráficos y los bots.
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        const MARKET_START_DATE = '2026-01-01';
+        const MARKET_START_MS = Date.UTC(2026, 0, 1);
+        const BOTS_STORAGE_KEY = 'bit2me-dca-earn-bots-v3';
+        const MARKET_CACHE_KEY = 'bit2me-btcusdc-real-candles-v1';
+        const BIT2ME_CANDLES_BASE = 'https://gateway.bit2me.com/v1/trading/candle';
+        const BINANCE_REST_BASES = [
+            'https://data-api.binance.vision/api/v3/klines',
+            'https://api-gcp.binance.com/api/v3/klines',
+            'https://api.binance.com/api/v3/klines'
+        ];
+        const MARKET_SOURCE_DEFINITIONS = [
+            { id: 'bit2me', label: 'Bit2Me Pro', type: 'bit2me', restBase: BIT2ME_CANDLES_BASE },
+            ...BINANCE_REST_BASES.map((restBase, index) => ({ id: `binance-${index + 1}`, label: 'Binance', type: 'binance', restBase }))
+        ];
+        const BINANCE_STREAM_URL = 'wss://stream.binance.com:9443/ws/btcusdc@kline_1d';
+
         let mainChart;
         let tvChartInstance;
         let tvSeries;
-        
+        let priceChartCanvas;
+        let priceChartTooltip;
+        let marketEmptyState;
+        let pmcOverlayLayer;
+        let botPmcOverlays = [];
+        let priceChartMarkers = [];
+        let pricePurchasePoints = [];
+        let pricePurchaseHitAreas = [];
+        let hoveredPurchasePoint = null;
+        let priceHoverIndex = null;
+        let portfolioChartState = null;
+        const priceZoomState = { factor: 1, center: 0.5, verticalPan: 0 };
+        const portfolioZoomState = { factor: 1, center: 0.5, verticalPan: 0 };
+        let activeChartPan = null;
+        const MAX_CHART_ZOOM = 12;
+        const PMC_COLORS = ['#0066ff', '#ffb020', '#a855f7', '#26c6b8', '#ff5d8f', '#54bfff', '#8bd450', '#ff7a45'];
+        let resizeAnimationFrame = null;
+        let marketSocket = null;
+        let marketReconnectTimer = null;
+        let marketPollTimer = null;
+        let marketRefreshTimer = null;
+        let activeMarketSource = null;
+        let bots = [];
+        let activeBotId = null;
+        let draftBot = null;
+        let lastSimulationTotalBtc = 0;
+        let lastSimulationInvestedFiat = 0;
+        let sellCalculatorContextKey = null;
+        const botRuntime = {};
+
         let globalDates = [];
         let globalDatesDisplay = []; // Formato DD/MM/YYYY para la tabla
         let globalPrices = [];
         let globalCandles = [];
 
-        // 3. FUENTE DE DATOS: Petición a la API de Binance
-        // Par: BTCUSDC | Intervalo: 1d (diario) | Límite: 150 velas históricas
-        async function fetchRealMarketData() {
-            // Usamos BTCUSDC tal y como indicaste en el nuevo codigo. 
-            // Binance soporta BTCUSDC. Si falla, el fallback lo cubre.
-            const url = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDC&interval=1d&limit=150';
-            
+        function makeBotId() {
+            return `bot-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        }
+
+        function todayIsoUtc() {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        function normaliseDate(value) {
+            const text = typeof value === 'string' ? value : '';
+            return /^\d{4}-\d{2}-\d{2}$/.test(text) && text >= MARKET_START_DATE ? text : MARKET_START_DATE;
+        }
+
+        function normaliseEndDate(value, startDate) {
+            const today = todayIsoUtc();
+            const normalisedStart = normaliseDate(startDate);
+            let endDate = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : today;
+            if (endDate > today && normalisedStart <= today) endDate = today;
+            if (endDate < normalisedStart) endDate = normalisedStart;
+            return endDate;
+        }
+
+        function createDefaultBot(overrides = {}) {
+            return {
+                id: makeBotId(),
+                name: 'DCA Bitcoin Bot',
+                startDate: MARKET_START_DATE,
+                endDate: todayIsoUtc(),
+                dailyInvest: 15,
+                useEarn: true,
+                apyPercent: 3,
+                earnFrequency: 3,
+                useBudget: false,
+                maxBudget: 1000,
+                useTarget: false,
+                targetBtc: 0.05,
+                useExecutions: true,
+                maxExecutions: 30,
+                createdAt: new Date().toISOString(),
+                ...overrides
+            };
+        }
+
+        function sanitiseBot(raw, index = 0) {
+            const fallback = createDefaultBot({ name: index ? `DCA Bitcoin Bot ${index + 1}` : 'DCA Bitcoin Bot' });
+            const startDate = normaliseDate(raw?.startDate);
+            const numberValue = (value, defaultValue, minimum = 0) => {
+                const parsed = Number(value);
+                return Number.isFinite(parsed) ? Math.max(minimum, parsed) : defaultValue;
+            };
+            return {
+                ...fallback,
+                id: typeof raw?.id === 'string' && raw.id ? raw.id : fallback.id,
+                name: typeof raw?.name === 'string' && raw.name.trim() ? raw.name.trim().slice(0, 48) : fallback.name,
+                startDate,
+                endDate: normaliseEndDate(raw?.endDate, startDate),
+                dailyInvest: numberValue(raw?.dailyInvest, 15, 0.01),
+                useEarn: raw?.useEarn !== false,
+                apyPercent: numberValue(raw?.apyPercent, 3),
+                earnFrequency: Math.max(1, Math.round(numberValue(raw?.earnFrequency, 3, 1))),
+                useBudget: Boolean(raw?.useBudget),
+                maxBudget: numberValue(raw?.maxBudget, 1000),
+                useTarget: Boolean(raw?.useTarget),
+                targetBtc: numberValue(raw?.targetBtc, 0.05),
+                useExecutions: raw?.useExecutions !== false,
+                maxExecutions: Math.max(0, Math.round(numberValue(raw?.maxExecutions, 30))),
+                createdAt: typeof raw?.createdAt === 'string' ? raw.createdAt : fallback.createdAt
+            };
+        }
+
+        function loadBots() {
             try {
-                const response = await fetch(url, {
-                    method: 'GET', mode: 'cors', headers: { 'Content-Type': 'application/json' }
-                });
-                
-                if (!response.ok) throw new Error('Network error o par no soportado');
-                
-                const data = await response.json();
-                
-                // Procesamos la respuesta de la API
-                let formattedData = data.map(candle => {
-                    return {
-                        // Binance da el tiempo en milisegundos; dividimos por 1000 para obtener formato Unix Timestamp en segundos
-                        time: candle[0] / 1000, 
-                        open: parseFloat(candle[1]),
-                        high: parseFloat(candle[2]),
-                        low: parseFloat(candle[3]),
-                        close: parseFloat(candle[4])
-                    };
-                });
-                
-                // CONDICIÓN REQUERIDA EN TU SCRIPT: Eliminar la última vela de la lista (la del día actual en curso)
-                // De esta forma, la vela más reciente del gráfico será siempre la del día de ayer completamente cerrado.
-                if (formattedData.length > 0) {
-                    formattedData.pop(); 
+                const saved = JSON.parse(localStorage.getItem(BOTS_STORAGE_KEY) || 'null');
+                const savedBots = Array.isArray(saved) ? saved : saved?.bots;
+                if (Array.isArray(savedBots) && savedBots.length) {
+                    bots = savedBots.map(sanitiseBot);
+                    const savedActiveId = Array.isArray(saved) ? null : saved.activeBotId;
+                    activeBotId = bots.some(bot => bot.id === savedActiveId) ? savedActiveId : bots[0].id;
+                    return;
                 }
-                
-                // Extraer datos para el motor de simulación interno
-                globalCandles = formattedData;
-                
-                globalCandles.forEach(candle => {
-                    let d = new Date(candle.time * 1000);
-                    let dateStr = d.toISOString().split('T')[0];
-                    let day = String(d.getDate()).padStart(2, '0');
-                    let month = String(d.getMonth() + 1).padStart(2, '0');
-                    let displayDate = `${day}/${month}/${d.getFullYear()}`;
-                    
-                    globalDates.push(dateStr);
-                    globalDatesDisplay.push(displayDate);
-                    globalPrices.push(candle.close);
-                });
-                
-                document.getElementById('api-status').innerHTML = '<i class="fa-solid fa-circle-nodes"></i> API Binance Conectada';
-                document.getElementById('api-status').className = 'api-badge online';
-                
-            } catch(e) {
-                console.warn("Fallo en API de Binance (BTCUSDC). Usando Fallback de datos simulados.", e);
-                document.getElementById('api-status').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Modo Offline (Datos Simulados)';
-                document.getElementById('api-status').className = 'api-badge offline';
-                generateFallbackData();
+            } catch (error) {
+                console.warn('No se pudo leer la configuración guardada de bots.', error);
             }
-            
-            document.getElementById('sidebar-date').innerText = globalDatesDisplay[0] || '--';
+            const firstBot = createDefaultBot();
+            bots = [firstBot];
+            activeBotId = firstBot.id;
+        }
+
+        function persistBots() {
+            try {
+                localStorage.setItem(BOTS_STORAGE_KEY, JSON.stringify({ bots, activeBotId }));
+            } catch (error) {
+                console.warn('El navegador no permitió guardar los bots localmente.', error);
+            }
+        }
+
+        function formatIsoDateEs(isoDate) {
+            const [year, month, day] = normaliseDate(isoDate).split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        function getActiveBot() {
+            return bots.find(bot => bot.id === activeBotId) || bots[0];
+        }
+
+        function renderBotsList() {
+            const list = document.getElementById('bots-list');
+            if (!list) return;
+            list.innerHTML = '';
+
+            bots.forEach(bot => {
+                const inferredStatus = bot.startDate > todayIsoUtc() ? 'Programado' : (bot.endDate < todayIsoUtc() ? 'Finalizado' : 'Activo');
+                const runtime = botRuntime[bot.id] || { status: inferredStatus };
+                const card = document.createElement('article');
+                card.className = `bot-card${bot.id === activeBotId ? ' active' : ''}`;
+                card.tabIndex = 0;
+                card.setAttribute('role', 'button');
+                card.setAttribute('aria-label', `Abrir ${bot.name}`);
+                card.innerHTML = `
+                    <div class="bot-card-content">
+                        <div class="bot-card-header">
+                            <div class="bot-card-title"><i class="fa-solid fa-retweet"></i><span data-bot-name></span></div>
+                            <div class="status-badge" data-bot-status></div>
+                        </div>
+                        <div class="bot-card-row"><span>Desde</span><span data-bot-date></span></div>
+                        <div class="bot-card-row"><span>Hasta</span><span data-bot-end-date></span></div>
+                        <div class="bot-card-row"><span>Par</span><span>BTC/USDC</span></div>
+                    </div>
+                    <div class="bot-card-footer"><span data-bot-amount></span><span>Cada día</span></div>`;
+                card.querySelector('[data-bot-name]').textContent = bot.name;
+                card.querySelector('[data-bot-date]').textContent = formatIsoDateEs(bot.startDate);
+                card.querySelector('[data-bot-end-date]').textContent = formatIsoDateEs(bot.endDate);
+                card.querySelector('[data-bot-amount]').textContent = `${formatNumberEs(bot.dailyInvest, 2)} USDC`;
+                const status = card.querySelector('[data-bot-status]');
+                status.textContent = runtime.status;
+                status.className = 'status-badge' + (runtime.status === 'Activo' ? ' completed' : (runtime.status === 'Programado' ? ' scheduled' : (runtime.status === 'Finalizado' ? ' finished' : '')));
+                card.addEventListener('click', () => selectBot(bot.id));
+                card.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        selectBot(bot.id);
+                    }
+                });
+                list.appendChild(card);
+            });
+        }
+
+        function applyBotToForm(bot) {
+            if (!bot) return;
+            document.getElementById('input-bot-name').value = bot.name;
+            document.getElementById('input-start-date').value = bot.startDate;
+            document.getElementById('input-end-date').value = bot.endDate;
+            document.getElementById('input-daily').value = bot.dailyInvest;
+            document.getElementById('toggle-earn').checked = bot.useEarn;
+            document.getElementById('input-apy').value = bot.apyPercent;
+            document.getElementById('input-earn-frequency').value = bot.earnFrequency;
+            document.getElementById('toggle-budget').checked = bot.useBudget;
+            document.getElementById('input-budget').value = bot.maxBudget;
+            document.getElementById('toggle-target').checked = bot.useTarget;
+            document.getElementById('input-target').value = bot.targetBtc;
+            document.getElementById('toggle-executions').checked = bot.useExecutions;
+            document.getElementById('input-executions').value = bot.maxExecutions;
+            toggleInputs();
+            syncSimulationDateBounds();
+        }
+
+        function readBotForm() {
+            const baseBot = draftBot || getActiveBot();
+            return sanitiseBot({
+                ...baseBot,
+                name: document.getElementById('input-bot-name').value,
+                startDate: document.getElementById('input-start-date').value,
+                endDate: document.getElementById('input-end-date').value,
+                dailyInvest: document.getElementById('input-daily').value,
+                useEarn: document.getElementById('toggle-earn').checked,
+                apyPercent: document.getElementById('input-apy').value,
+                earnFrequency: document.getElementById('input-earn-frequency').value,
+                useBudget: document.getElementById('toggle-budget').checked,
+                maxBudget: document.getElementById('input-budget').value,
+                useTarget: document.getElementById('toggle-target').checked,
+                targetBtc: document.getElementById('input-target').value,
+                useExecutions: document.getElementById('toggle-executions').checked,
+                maxExecutions: document.getElementById('input-executions').value
+            });
+        }
+
+        function selectBot(botId) {
+            const bot = bots.find(candidate => candidate.id === botId);
+            if (!bot) return;
+            draftBot = null;
+            setConfigurationMode(false);
+            activeBotId = bot.id;
+            persistBots();
+            applyBotToForm(bot);
+            renderBotsList();
+            runSimulation();
+        }
+
+        function saveActiveBot() {
+            if (draftBot) {
+                const newBot = readBotForm();
+                bots.push(newBot);
+                activeBotId = newBot.id;
+                draftBot = null;
+                setConfigurationMode(false);
+                persistBots();
+                applyBotToForm(newBot);
+                renderBotsList();
+                runSimulation();
+                return;
+            }
+
+            const index = bots.findIndex(bot => bot.id === activeBotId);
+            if (index < 0) return;
+            bots[index] = readBotForm();
+            persistBots();
+            renderBotsList();
+            runSimulation();
+        }
+
+        function resetActiveBotForm() {
+            draftBot = null;
+            setConfigurationMode(false);
+            applyBotToForm(getActiveBot());
+            runSimulation();
+        }
+
+        function setConfigurationMode(isCreating) {
+            const panel = document.getElementById('configuration-panel');
+            panel.classList.toggle('creating-bot', isCreating);
+            document.getElementById('configuration-title').textContent = isCreating ? 'Crear bot · Configuración' : 'Configuración';
+            document.getElementById('save-bot-changes').textContent = isCreating ? 'Crear bot' : 'Guardar cambios';
+        }
+
+        function beginCreateBot() {
+            draftBot = createDefaultBot({
+                name: `DCA Bitcoin Bot ${bots.length + 1}`,
+                startDate: MARKET_START_DATE
+            });
+            applyBotToForm(draftBot);
+            setConfigurationMode(true);
+            document.getElementById('configuration-content').scrollTop = 0;
+
+            const panel = document.getElementById('configuration-panel');
+            if (typeof panel.scrollIntoView === 'function') {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+            }
+            window.setTimeout(() => document.getElementById('input-bot-name').focus(), 300);
+            runSimulation();
+        }
+
+        function loadCandles(candles) {
+            const uniqueCandles = new Map();
+            candles.forEach(candle => {
+                const numeric = {
+                    time: Number(candle.time),
+                    open: Number(candle.open),
+                    high: Number(candle.high),
+                    low: Number(candle.low),
+                    close: Number(candle.close),
+                    closed: candle.closed !== false
+                };
+                if ([numeric.time, numeric.open, numeric.high, numeric.low, numeric.close].every(Number.isFinite)) {
+                    uniqueCandles.set(numeric.time, numeric);
+                }
+            });
+
+            globalDates = [];
+            globalDatesDisplay = [];
+            globalPrices = [];
+            globalCandles = [...uniqueCandles.values()].sort((a, b) => a.time - b.time);
+
+            globalCandles.forEach(candle => {
+                const date = new Date(candle.time * 1000);
+                const day = String(date.getUTCDate()).padStart(2, '0');
+                const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                globalDates.push(date.toISOString().slice(0, 10));
+                globalDatesDisplay.push(`${day}/${month}/${date.getUTCFullYear()}`);
+                globalPrices.push(candle.close);
+            });
+        }
+
+        function getSimulationEndIndex(endDate) {
+            let endIndex = -1;
+            for (let index = 0; index < globalDates.length; index++) {
+                if (globalDates[index] > endDate) break;
+                endIndex = index;
+            }
+            return endIndex;
+        }
+
+        function calculateBotPmcSummary(rawBot) {
+            if (!globalDates.length) return null;
+            const config = sanitiseBot(rawBot);
+            const firstEligibleIndex = globalDates.findIndex(date => date >= config.startDate);
+            const simulationEndIndex = getSimulationEndIndex(config.endDate);
+            if (firstEligibleIndex < 0 || simulationEndIndex < firstEligibleIndex) return null;
+
+            const dailyEarnRate = config.useEarn
+                ? Math.pow(1 + config.apyPercent / 100, 1 / 365) - 1
+                : 0;
+            let walletBalance = 0;
+            let earnBalance = 0;
+            let principalBtc = 0;
+            let totalInvested = 0;
+            let executions = 0;
+            let purchasesSinceTransfer = 0;
+            let purchasesActive = true;
+            let firstPurchaseIndex = -1;
+            let lastPurchaseIndex = -1;
+
+            const transferWalletToEarn = () => {
+                if (!config.useEarn || walletBalance <= 0) return;
+                earnBalance += walletBalance;
+                walletBalance = 0;
+            };
+
+            for (let index = firstEligibleIndex; index <= simulationEndIndex; index++) {
+                if (config.useEarn && earnBalance > 0 && dailyEarnRate > 0) {
+                    earnBalance += earnBalance * dailyEarnRate;
+                }
+
+                const totalBtcBeforePurchase = walletBalance + earnBalance;
+                const shouldStop = !purchasesActive ||
+                    (config.useBudget && totalInvested + config.dailyInvest > config.maxBudget) ||
+                    (config.useTarget && totalBtcBeforePurchase >= config.targetBtc) ||
+                    (config.useExecutions && executions >= config.maxExecutions);
+
+                if (shouldStop) {
+                    if (purchasesActive) {
+                        purchasesActive = false;
+                        transferWalletToEarn();
+                        purchasesSinceTransfer = 0;
+                    }
+                    continue;
+                }
+
+                const price = globalPrices[index];
+                const btcBought = price > 0 ? config.dailyInvest / price : 0;
+                walletBalance += btcBought;
+                principalBtc += btcBought;
+                totalInvested += config.dailyInvest;
+                executions++;
+                purchasesSinceTransfer++;
+                if (firstPurchaseIndex < 0) firstPurchaseIndex = index;
+                lastPurchaseIndex = index;
+
+                if (config.useEarn && purchasesSinceTransfer >= config.earnFrequency) {
+                    transferWalletToEarn();
+                    purchasesSinceTransfer = 0;
+                }
+            }
+
+            if (principalBtc <= 0 || firstPurchaseIndex < 0) return null;
+            return {
+                botId: config.id,
+                name: config.name,
+                price: totalInvested / principalBtc,
+                startIndex: firstPurchaseIndex,
+                endIndex: lastPurchaseIndex,
+                startTime: globalCandles[firstPurchaseIndex].time,
+                executions
+            };
+        }
+
+        function refreshBotPmcOverlays(activeConfig) {
+            const legend = document.getElementById('pmc-legend');
+            const activeId = activeConfig?.id || activeBotId;
+            const configurations = bots.map(bot => bot.id === activeId && activeConfig ? activeConfig : bot);
+            if (activeConfig && !configurations.some(bot => bot.id === activeId)) configurations.push(activeConfig);
+
+            botPmcOverlays = configurations
+                .map((bot, index) => {
+                    const summary = calculateBotPmcSummary(bot);
+                    return summary ? {
+                        ...summary,
+                        color: PMC_COLORS[index % PMC_COLORS.length],
+                        active: summary.botId === activeId
+                    } : null;
+                })
+                .filter(Boolean);
+
+            if (legend) {
+                legend.innerHTML = '';
+                botPmcOverlays.forEach(overlay => {
+                    const chip = document.createElement('span');
+                    chip.className = `pmc-chip${overlay.active ? ' active' : ''}`;
+                    chip.style.setProperty('--pmc-color', overlay.color);
+                    chip.title = `${overlay.name}: PMC ${formatNumberEs(overlay.price, 2)} USDC · ${overlay.executions} ejecuciones`;
+
+                    const swatch = document.createElement('i');
+                    swatch.className = 'pmc-swatch';
+                    const name = document.createElement('span');
+                    name.className = 'pmc-chip-name';
+                    name.textContent = overlay.name;
+                    const value = document.createElement('strong');
+                    value.className = 'pmc-chip-value';
+                    value.textContent = `PMC ${formatNumberEs(overlay.price, 2)}`;
+                    chip.append(swatch, name, value);
+                    legend.appendChild(chip);
+                });
+            }
+            drawPriceChart();
+        }
+
+        function refreshMarketViews() {
             initTradingView();
             runSimulation();
         }
 
-        function generateFallbackData() {
-            let startDate = new Date();
-            startDate.setDate(startDate.getDate() - 100);
-            let currentPrice = 62000; 
-            
-            for (let i = 0; i < 100; i++) {
-                let d = new Date(startDate.getTime() + (i * 24 * 60 * 60 * 1000));
-                let dateStr = d.toISOString().split('T')[0];
-                let timeUnix = d.getTime() / 1000;
-                
-                let day = String(d.getDate()).padStart(2, '0');
-                let month = String(d.getMonth() + 1).padStart(2, '0');
-                let displayDate = `${day}/${month}/${d.getFullYear()}`;
-                
-                let change = (Math.random() - 0.48) * 0.04; 
-                let open = currentPrice;
-                let close = open * (1 + change);
-                let high = Math.max(open, close) * (1 + Math.random() * 0.02);
-                let low = Math.min(open, close) * (1 - Math.random() * 0.02);
-                
-                globalCandles.push({ time: timeUnix, open: open, high: high, low: low, close: close });
-                globalDates.push(dateStr);
-                globalDatesDisplay.push(displayDate);
-                globalPrices.push(close);
-                
-                currentPrice = close;
+        function setApiStatus(message, state = '') {
+            const status = document.getElementById('api-status');
+            if (!status) return;
+            const icon = state === 'online' ? 'fa-circle-nodes' : (state === 'offline' ? 'fa-triangle-exclamation' : 'fa-spinner fa-spin');
+            status.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`;
+            status.className = `api-badge${state ? ` ${state}` : ''}`;
+        }
+
+        function setMarketEmptyState(title, detail) {
+            if (!marketEmptyState) return;
+            marketEmptyState.querySelector('strong').textContent = title;
+            marketEmptyState.querySelector('span').textContent = detail;
+            marketEmptyState.hidden = false;
+        }
+
+        function parseBinanceKline(row) {
+            const candle = {
+                time: Math.floor(Number(row[0]) / 1000),
+                open: Number(row[1]),
+                high: Number(row[2]),
+                low: Number(row[3]),
+                close: Number(row[4]),
+                closed: Number(row[6]) < Date.now()
+            };
+            return [candle.time, candle.open, candle.high, candle.low, candle.close].every(Number.isFinite) ? candle : null;
+        }
+
+        function parseBit2MeKline(row) {
+            const openTime = Number(row?.[0]);
+            const todayUtc = new Date();
+            const todayStartMs = Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth(), todayUtc.getUTCDate());
+            const candle = {
+                time: Math.floor(openTime / 1000),
+                open: Number(row?.[1]),
+                high: Number(row?.[2]),
+                low: Number(row?.[3]),
+                close: Number(row?.[4]),
+                closed: openTime < todayStartMs
+            };
+            return [candle.time, candle.open, candle.high, candle.low, candle.close].every(Number.isFinite) ? candle : null;
+        }
+
+        function validateRealCandles(candles) {
+            const unique = new Map();
+            candles.forEach(candle => {
+                if (!candle) return;
+                if ([candle.time, candle.open, candle.high, candle.low, candle.close].every(Number.isFinite)) {
+                    unique.set(candle.time, candle);
+                }
+            });
+            const validated = [...unique.values()].sort((a, b) => a.time - b.time);
+            if (validated.length < 20) throw new Error('Histórico real insuficiente');
+            if (validated[0].time * 1000 > MARKET_START_MS + (7 * DAY_MS)) {
+                throw new Error('El histórico real no comienza en enero de 2026');
+            }
+            return validated;
+        }
+
+        async function fetchBit2MeHistoricalCandles(signal, startTime = MARKET_START_MS, endTime = Date.now(), limit = 1000) {
+            const query = new URLSearchParams({
+                symbol: 'BTC/USDC',
+                interval: '1440',
+                startTime: String(startTime),
+                endTime: String(endTime),
+                limit: String(limit)
+            });
+            const response = await fetch(`${BIT2ME_CANDLES_BASE}?${query}`, { method: 'GET', mode: 'cors', cache: 'no-store', signal });
+            if (!response.ok) throw new Error(`Bit2Me respondió HTTP ${response.status}`);
+            const rows = await response.json();
+            if (!Array.isArray(rows)) throw new Error('Formato Bit2Me no válido');
+            return rows.map(parseBit2MeKline).filter(Boolean);
+        }
+
+        async function fetchBinanceHistoricalCandles(restBase, signal) {
+            const candles = [];
+            let cursor = MARKET_START_MS;
+            const endTime = Date.now();
+
+            while (cursor <= endTime) {
+                const url = `${restBase}?symbol=BTCUSDC&interval=1d&startTime=${cursor}&endTime=${endTime}&limit=1000`;
+                const response = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store', signal });
+                if (!response.ok) throw new Error(`Binance respondió HTTP ${response.status}`);
+                const page = await response.json();
+                if (!Array.isArray(page)) throw new Error('Formato de datos no válido');
+                if (!page.length) break;
+
+                page.map(parseBinanceKline).filter(Boolean).forEach(candle => candles.push(candle));
+                const lastOpenTime = Number(page[page.length - 1][0]);
+                const nextCursor = lastOpenTime + DAY_MS;
+                if (page.length < 1000 || !Number.isFinite(nextCursor) || nextCursor <= cursor) break;
+                cursor = nextCursor;
+            }
+
+            return candles;
+        }
+
+        function getSourceLoader(source, signal) {
+            return source.type === 'bit2me'
+                ? fetchBit2MeHistoricalCandles(signal)
+                : fetchBinanceHistoricalCandles(source.restBase, signal);
+        }
+
+        function fetchFirstRealMarketSource() {
+            return new Promise((resolve, reject) => {
+                const controllers = [];
+                const errors = [];
+                let failures = 0;
+                let settled = false;
+                let backupTimer;
+
+                const launch = source => {
+                    const controller = new AbortController();
+                    const timeout = window.setTimeout(() => controller.abort(), 10000);
+                    controllers.push({ controller, timeout });
+                    getSourceLoader(source, controller.signal)
+                        .then(validateRealCandles)
+                        .then(candles => {
+                            if (settled) return;
+                            settled = true;
+                            window.clearTimeout(backupTimer);
+                            controllers.forEach(item => {
+                                window.clearTimeout(item.timeout);
+                                if (item.controller !== controller) item.controller.abort();
+                            });
+                            resolve({ candles, source });
+                        })
+                        .catch(error => {
+                            if (settled) return;
+                            errors.push(`${source.label}: ${error.message}`);
+                            failures++;
+                            if (failures === MARKET_SOURCE_DEFINITIONS.length) {
+                                settled = true;
+                                reject(new Error(errors.join(' | ')));
+                            }
+                        })
+                        .finally(() => window.clearTimeout(timeout));
+                };
+
+                // Bit2Me Pro es la fuente principal. Los servidores públicos de
+                // Binance se activan poco después como redundancia, sin retrasar la demo.
+                launch(MARKET_SOURCE_DEFINITIONS[0]);
+                backupTimer = window.setTimeout(() => {
+                    MARKET_SOURCE_DEFINITIONS.slice(1).forEach(launch);
+                }, 650);
+            });
+        }
+
+        function persistRealMarketCache(candles, source) {
+            try {
+                const validated = validateRealCandles(candles);
+                const compactCandles = validated.map(candle => [
+                    candle.time, candle.open, candle.high, candle.low, candle.close
+                ]);
+                localStorage.setItem(MARKET_CACHE_KEY, JSON.stringify({
+                    version: 1,
+                    symbol: 'BTC/USDC',
+                    sourceId: source?.id || 'bit2me',
+                    savedAt: Date.now(),
+                    candles: compactCandles
+                }));
+            } catch (error) {
+                console.warn('No se pudo guardar el histórico real para uso sin conexión.', error);
             }
         }
 
-        // 2. CONFIGURACIÓN DEL GRÁFICO DE TRADINGVIEW (Integrada en la arquitectura del dashboard)
+        function loadRealMarketCache() {
+            try {
+                const cached = JSON.parse(localStorage.getItem(MARKET_CACHE_KEY) || 'null');
+                if (cached?.version !== 1 || cached?.symbol !== 'BTC/USDC' || !Array.isArray(cached.candles)) return null;
+                const today = new Date();
+                const todayStartSeconds = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) / 1000;
+                const candles = validateRealCandles(cached.candles.map(row => ({
+                    time: Number(row?.[0]),
+                    open: Number(row?.[1]),
+                    high: Number(row?.[2]),
+                    low: Number(row?.[3]),
+                    close: Number(row?.[4]),
+                    closed: Number(row?.[0]) < todayStartSeconds
+                })));
+                const source = MARKET_SOURCE_DEFINITIONS.find(item => item.id === cached.sourceId) || MARKET_SOURCE_DEFINITIONS[0];
+                return { candles, source, savedAt: Number(cached.savedAt) || 0 };
+            } catch (error) {
+                console.warn('No se pudo recuperar el histórico real guardado.', error);
+                return null;
+            }
+        }
+
+        function getLastMarketDateText(candles = globalCandles) {
+            const lastCandle = candles[candles.length - 1];
+            if (!lastCandle) return '';
+            return new Date(lastCandle.time * 1000).toLocaleDateString('es-ES', { timeZone: 'UTC' });
+        }
+
+        function upsertMarketCandle(candle) {
+            const nextCandles = [...globalCandles];
+            const index = nextCandles.findIndex(item => item.time === candle.time);
+            if (index >= 0) nextCandles[index] = candle;
+            else nextCandles.push(candle);
+            loadCandles(nextCandles);
+        }
+
+        function scheduleMarketRefresh() {
+            if (marketRefreshTimer) return;
+            marketRefreshTimer = window.setTimeout(() => {
+                marketRefreshTimer = null;
+                refreshMarketViews();
+            }, 350);
+        }
+
+        function connectLiveMarketStream() {
+            if (activeMarketSource?.type !== 'binance') {
+                setApiStatus(`Datos reales ${activeMarketSource?.label || 'BTC/USDC'} · actualización cada minuto`, 'online');
+                return;
+            }
+            if (typeof WebSocket === 'undefined') {
+                setApiStatus(`Datos reales ${activeMarketSource.label} · actualización cada minuto`, 'online');
+                return;
+            }
+
+            if (marketReconnectTimer) window.clearTimeout(marketReconnectTimer);
+            setApiStatus(`Datos reales ${activeMarketSource.label} · conectando vela en directo…`);
+            const socket = new WebSocket(BINANCE_STREAM_URL);
+            marketSocket = socket;
+
+            socket.onopen = () => setApiStatus(`En directo · ${activeMarketSource.label}`, 'online');
+            socket.onmessage = event => {
+                try {
+                    const payload = JSON.parse(event.data);
+                    const kline = payload.k;
+                    if (!kline || kline.i !== '1d') return;
+                    const candle = {
+                        time: Math.floor(Number(kline.t) / 1000),
+                        open: Number(kline.o),
+                        high: Number(kline.h),
+                        low: Number(kline.l),
+                        close: Number(kline.c),
+                        closed: Boolean(kline.x)
+                    };
+                    if (![candle.time, candle.open, candle.high, candle.low, candle.close].every(Number.isFinite)) return;
+                    upsertMarketCandle(candle);
+                    if (candle.closed) persistRealMarketCache(globalCandles, activeMarketSource);
+                    const updateTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    setApiStatus(`En directo ${activeMarketSource.label} · ${updateTime}`, 'online');
+                    scheduleMarketRefresh();
+                } catch (error) {
+                    console.warn('Mensaje de mercado no válido.', error);
+                }
+            };
+            socket.onerror = () => socket.close();
+            socket.onclose = () => {
+                if (marketSocket !== socket) return;
+                if (activeMarketSource?.type !== 'binance') return;
+                setApiStatus(`Datos reales ${activeMarketSource.label} · reconectando directo…`, 'online');
+                marketReconnectTimer = window.setTimeout(connectLiveMarketStream, 5000);
+            };
+        }
+
+        async function refreshLatestCandle() {
+            if (!activeMarketSource) return;
+            const controller = new AbortController();
+            const timeout = window.setTimeout(() => controller.abort(), 8000);
+            try {
+                let candles;
+                if (activeMarketSource.type === 'bit2me') {
+                    candles = await fetchBit2MeHistoricalCandles(controller.signal, Date.now() - (3 * DAY_MS), Date.now(), 5);
+                } else {
+                    const response = await fetch(`${activeMarketSource.restBase}?symbol=BTCUSDC&interval=1d&limit=2`, { cache: 'no-store', signal: controller.signal });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const rows = await response.json();
+                    if (!Array.isArray(rows)) throw new Error('Formato no válido');
+                    candles = rows.map(parseBinanceKline).filter(Boolean);
+                }
+                if (!candles.length) throw new Error('Sin velas recientes');
+                candles.forEach(upsertMarketCandle);
+                persistRealMarketCache(globalCandles, activeMarketSource);
+                const updateTime = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                setApiStatus(`Datos reales ${activeMarketSource.label} · ${updateTime}`, 'online');
+                scheduleMarketRefresh();
+            } catch (error) {
+                console.warn('No se pudo hacer la actualización REST de respaldo.', error);
+                if (globalCandles.length) {
+                    setApiStatus(`Sin conexión · histórico real guardado hasta ${getLastMarketDateText()}`, 'offline');
+                }
+            } finally {
+                window.clearTimeout(timeout);
+            }
+        }
+
+        function startMarketPolling() {
+            if (marketPollTimer) window.clearInterval(marketPollTimer);
+            marketPollTimer = window.setInterval(refreshLatestCandle, 60 * 1000);
+        }
+
+        // El dashboard solo muestra velas reales. Primero recupera el último histórico
+        // real guardado y después intenta actualizarlo desde Bit2Me Pro o Binance.
+        async function fetchRealMarketData() {
+            const cached = loadRealMarketCache();
+            if (cached) {
+                activeMarketSource = cached.source;
+                loadCandles(cached.candles);
+                setApiStatus(`Histórico real guardado · hasta ${getLastMarketDateText(cached.candles)}`, 'offline');
+                refreshMarketViews();
+            } else {
+                initTradingView();
+                setMarketEmptyState('Descargando histórico real…', 'Consultando las velas diarias BTC/USDC de Bit2Me Pro y las fuentes oficiales de respaldo.');
+                setApiStatus('Consultando histórico real…');
+            }
+
+            try {
+                const result = await fetchFirstRealMarketSource();
+                activeMarketSource = result.source;
+                loadCandles(result.candles);
+                persistRealMarketCache(result.candles, result.source);
+                setApiStatus(`Histórico real ${result.source.label} · hasta ${getLastMarketDateText(result.candles)}`, 'online');
+                refreshMarketViews();
+                connectLiveMarketStream();
+                startMarketPolling();
+            } catch (error) {
+                console.warn('No se pudo actualizar el histórico real.', error);
+                if (cached) {
+                    activeMarketSource = cached.source;
+                    setApiStatus(`Sin conexión · histórico real guardado hasta ${getLastMarketDateText(cached.candles)}`, 'offline');
+                    startMarketPolling();
+                } else {
+                    activeMarketSource = null;
+                    setApiStatus('Sin conexión · histórico real no disponible', 'offline');
+                    setMarketEmptyState(
+                        'No se muestran precios simulados',
+                        'No ha sido posible descargar el histórico real. Conecta este navegador a internet y recarga la página; cuando se descargue una vez, quedará guardado para posteriores aperturas sin conexión.'
+                    );
+                }
+            }
+        }
+
+        function prepareCanvas(canvas, container, defaultHeight) {
+            const width = Math.floor(container.clientWidth || container.getBoundingClientRect().width);
+            const height = Math.floor(container.clientHeight || defaultHeight);
+            if (width <= 0 || height <= 0) return null;
+
+            const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+            const targetWidth = Math.round(width * pixelRatio);
+            const targetHeight = Math.round(height * pixelRatio);
+
+            if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+            }
+
+            const context = canvas.getContext('2d');
+            context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+            return { context, width, height };
+        }
+
+        function getVisibleRange(total, zoomState, minimumPoints = 12) {
+            if (total <= 0) return { start: 0, end: 0 };
+
+            const safeMinimum = Math.min(minimumPoints, total);
+            const visibleCount = Math.min(total, Math.max(safeMinimum, Math.round(total / zoomState.factor)));
+            const centerIndex = zoomState.center * Math.max(0, total - 1);
+            const maxStart = Math.max(0, total - visibleCount);
+            const start = Math.max(0, Math.min(maxStart, Math.round(centerIndex - (visibleCount - 1) / 2)));
+            return { start, end: start + visibleCount };
+        }
+
+        function getZoomState(type) {
+            return type === 'price' ? priceZoomState : portfolioZoomState;
+        }
+
+        function getZoomTotal(type) {
+            return type === 'price'
+                ? globalCandles.length
+                : (portfolioChartState ? portfolioChartState.labels.length : 0);
+        }
+
+        function updateZoomLevel(type) {
+            const element = document.getElementById(`${type}-zoom-level`);
+            if (element) element.textContent = `${Math.round(getZoomState(type).factor * 100)}%`;
+        }
+
+        function adjustChartZoom(type, multiplier, anchorRatio = 0.5) {
+            const state = getZoomState(type);
+            const total = getZoomTotal(type);
+            if (!total) return;
+
+            const oldRange = getVisibleRange(total, state, type === 'price' ? 15 : 8);
+            const safeAnchor = Math.max(0, Math.min(1, anchorRatio));
+            const anchorIndex = oldRange.start + safeAnchor * Math.max(0, oldRange.end - oldRange.start - 1);
+            state.factor = Math.max(1, Math.min(MAX_CHART_ZOOM, state.factor * multiplier));
+
+            if (state.factor <= 1.001) {
+                state.factor = 1;
+                state.center = 0.5;
+            } else {
+                const newCount = Math.min(total, Math.max(type === 'price' ? Math.min(15, total) : Math.min(8, total), Math.round(total / state.factor)));
+                const desiredStart = anchorIndex - safeAnchor * Math.max(0, newCount - 1);
+                const centerIndex = desiredStart + (newCount - 1) / 2;
+                state.center = Math.max(0, Math.min(1, centerIndex / Math.max(1, total - 1)));
+            }
+
+            updateZoomLevel(type);
+            if (type === 'price') {
+                priceHoverIndex = null;
+                if (priceChartTooltip) priceChartTooltip.style.display = 'none';
+                drawPriceChart();
+            } else {
+                drawPortfolioChart();
+            }
+        }
+
+        function resetChartZoom(type) {
+            const state = getZoomState(type);
+            state.factor = 1;
+            state.center = 0.5;
+            state.verticalPan = 0;
+            updateZoomLevel(type);
+            if (type === 'price') {
+                priceHoverIndex = null;
+                hoveredPurchasePoint = null;
+                if (priceChartTooltip) priceChartTooltip.style.display = 'none';
+                drawPriceChart();
+            } else {
+                drawPortfolioChart();
+            }
+        }
+
+        function handleChartWheel(event, type, element) {
+            event.preventDefault();
+            const rect = element.getBoundingClientRect();
+            const anchorRatio = rect.width > 0 ? (event.clientX - rect.left) / rect.width : 0.5;
+            adjustChartZoom(type, event.deltaY < 0 ? 1.35 : (1 / 1.35), anchorRatio);
+        }
+
+        function setupChartPanning(canvas, type) {
+            canvas.classList.add('chart-pan-surface');
+            canvas.setAttribute('title', 'Arrastra para desplazar el gráfico. Usa la rueda para ampliar o reducir.');
+
+            canvas.addEventListener('pointerdown', event => {
+                if (event.button !== undefined && event.button !== 0) return;
+                const state = getZoomState(type);
+                activeChartPan = {
+                    type,
+                    pointerId: event.pointerId,
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    startCenter: state.center,
+                    startVerticalPan: state.verticalPan
+                };
+                if (typeof canvas.setPointerCapture === 'function' && event.pointerId !== undefined) {
+                    canvas.setPointerCapture(event.pointerId);
+                }
+                canvas.classList.add('is-panning');
+                if (type === 'price') {
+                    priceHoverIndex = null;
+                    hoveredPurchasePoint = null;
+                    if (priceChartTooltip) priceChartTooltip.style.display = 'none';
+                }
+                event.preventDefault();
+            });
+
+            canvas.addEventListener('pointermove', event => {
+                if (!activeChartPan || activeChartPan.type !== type ||
+                    (activeChartPan.pointerId !== undefined && event.pointerId !== activeChartPan.pointerId)) return;
+
+                const state = getZoomState(type);
+                const total = getZoomTotal(type);
+                if (!total) return;
+                const rect = canvas.getBoundingClientRect();
+                const range = getVisibleRange(total, state, type === 'price' ? 15 : 8);
+                const visibleCount = Math.max(1, range.end - range.start);
+                const horizontalMove = (event.clientX - activeChartPan.startX) / Math.max(1, rect.width);
+                const verticalMove = (event.clientY - activeChartPan.startY) / Math.max(1, rect.height);
+
+                state.center = Math.max(0, Math.min(1,
+                    activeChartPan.startCenter - horizontalMove * (visibleCount / Math.max(1, total - 1))));
+                state.verticalPan = Math.max(-2.5, Math.min(2.5,
+                    activeChartPan.startVerticalPan + verticalMove));
+
+                if (type === 'price') drawPriceChart(); else drawPortfolioChart();
+                event.preventDefault();
+            });
+
+            const finishPan = event => {
+                if (!activeChartPan || activeChartPan.type !== type ||
+                    (activeChartPan.pointerId !== undefined && event.pointerId !== activeChartPan.pointerId)) return;
+                if (typeof canvas.releasePointerCapture === 'function' && event.pointerId !== undefined) {
+                    try { canvas.releasePointerCapture(event.pointerId); } catch (error) { /* Ya liberado por el navegador. */ }
+                }
+                activeChartPan = null;
+                canvas.classList.remove('is-panning');
+            };
+
+            canvas.addEventListener('pointerup', finishPan);
+            canvas.addEventListener('pointercancel', finishPan);
+        }
+
+        function getFullscreenElement() {
+            return document.fullscreenElement || document.webkitFullscreenElement || null;
+        }
+
+        function syncFullscreenButtons() {
+            ['price', 'portfolio'].forEach(type => {
+                const box = document.getElementById(`${type}-chart-box`);
+                const button = document.getElementById(`${type}-fullscreen`);
+                const active = getFullscreenElement() === box || box.classList.contains('is-pseudo-fullscreen');
+                button.textContent = active ? '↙' : '⛶';
+                button.setAttribute('aria-label', active ? 'Salir de pantalla completa' : 'Ver gráfico en pantalla completa');
+                button.setAttribute('title', active ? 'Salir de pantalla completa' : 'Pantalla completa');
+            });
+            window.setTimeout(scheduleChartsResize, 60);
+        }
+
+        function closePseudoFullscreen() {
+            document.querySelectorAll('.chart-box.is-pseudo-fullscreen').forEach(box => box.classList.remove('is-pseudo-fullscreen'));
+            document.body.classList.remove('chart-fullscreen-open');
+            syncFullscreenButtons();
+        }
+
+        async function toggleChartFullscreen(type) {
+            const box = document.getElementById(`${type}-chart-box`);
+            const active = getFullscreenElement();
+
+            if (box.classList.contains('is-pseudo-fullscreen')) {
+                closePseudoFullscreen();
+                return;
+            }
+
+            try {
+                if (active === box) {
+                    if (document.exitFullscreen) await document.exitFullscreen();
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                } else if (box.requestFullscreen) {
+                    await box.requestFullscreen();
+                } else if (box.webkitRequestFullscreen) {
+                    box.webkitRequestFullscreen();
+                } else {
+                    throw new Error('Fullscreen API no disponible');
+                }
+            } catch (error) {
+                box.classList.add('is-pseudo-fullscreen');
+                document.body.classList.add('chart-fullscreen-open');
+                syncFullscreenButtons();
+            }
+        }
+
+        function setupFullscreenControls() {
+            ['price', 'portfolio'].forEach(type => {
+                document.getElementById(`${type}-fullscreen`).addEventListener('click', () => toggleChartFullscreen(type));
+            });
+            document.addEventListener('fullscreenchange', syncFullscreenButtons);
+            document.addEventListener('webkitfullscreenchange', syncFullscreenButtons);
+            syncFullscreenButtons();
+        }
+
+        function setupZoomControls() {
+            ['price', 'portfolio'].forEach(type => {
+                document.getElementById(`${type}-zoom-in`).addEventListener('click', () => adjustChartZoom(type, 1.35));
+                document.getElementById(`${type}-zoom-out`).addEventListener('click', () => adjustChartZoom(type, 1 / 1.35));
+                document.getElementById(`${type}-zoom-reset`).addEventListener('click', () => resetChartZoom(type));
+                updateZoomLevel(type);
+            });
+
+            const portfolioCanvas = document.getElementById('mainChart');
+            portfolioCanvas.addEventListener('wheel', event => handleChartWheel(event, 'portfolio', portfolioCanvas), { passive: false });
+            setupChartPanning(portfolioCanvas, 'portfolio');
+        }
+
         function initTradingView() {
             const container = document.getElementById('tv-chart');
-            container.innerHTML = ''; 
-            
-            const chartOptions = {
-                layout: {
-                    backgroundColor: '#131722',
-                    textColor: '#d1d4dc',
-                },
-                grid: {
-                    vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
-                    horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
-                },
-                crosshair: {
-                    mode: LightweightCharts.CrosshairMode.Normal,
-                },
-                rightPriceScale: {
-                    borderColor: 'rgba(197, 203, 206, 0.8)',
-                },
-                timeScale: {
-                    borderColor: 'rgba(197, 203, 206, 0.8)',
-                    timeVisible: false, // Oculta la hora ya que son velas diarias
-                },
-            };
-            
-            tvChartInstance = LightweightCharts.createChart(container, chartOptions);
 
-            // Añadimos la serie de velas japonesas y definimos los colores de compra/venta dictados en tu código
-            tvSeries = tvChartInstance.addCandlestickSeries({
-                upColor: '#26a69a',
-                downColor: '#ef5350',
-                borderVisible: false,
-                wickUpColor: '#26a69a',
-                wickDownColor: '#ef5350',
+            if (!priceChartCanvas) {
+                container.innerHTML = '';
+                priceChartCanvas = document.createElement('canvas');
+                priceChartCanvas.id = 'price-chart-canvas';
+                priceChartCanvas.setAttribute('role', 'img');
+                priceChartCanvas.setAttribute('aria-label', 'Gráfico de velas diarias BTC/USDC');
+
+                priceChartTooltip = document.createElement('div');
+                priceChartTooltip.className = 'chart-tooltip';
+
+                marketEmptyState = document.createElement('div');
+                marketEmptyState.className = 'market-empty-state';
+                const emptyTitle = document.createElement('strong');
+                emptyTitle.textContent = 'Descargando histórico real…';
+                const emptyDetail = document.createElement('span');
+                emptyDetail.textContent = 'La demo no genera precios ficticios mientras espera los datos de mercado.';
+                marketEmptyState.append(emptyTitle, emptyDetail);
+
+                pmcOverlayLayer = document.createElement('div');
+                pmcOverlayLayer.className = 'pmc-overlay-layer';
+                pmcOverlayLayer.setAttribute('aria-hidden', 'true');
+
+                container.append(priceChartCanvas, pmcOverlayLayer, priceChartTooltip, marketEmptyState);
+
+                priceChartCanvas.addEventListener('wheel', event => handleChartWheel(event, 'price', priceChartCanvas), { passive: false });
+
+                priceChartCanvas.addEventListener('pointermove', event => {
+                    if (!globalCandles.length) return;
+                    if (activeChartPan && activeChartPan.type === 'price') return;
+                    const rect = priceChartCanvas.getBoundingClientRect();
+                    const plotLeft = 12;
+                    const plotRight = rect.width - 122;
+                    const relativeX = event.clientX - rect.left;
+                    const relativeY = event.clientY - rect.top;
+
+                    if (relativeX < plotLeft || relativeX > plotRight) {
+                        priceHoverIndex = null;
+                        hoveredPurchasePoint = null;
+                        priceChartTooltip.style.display = 'none';
+                    } else {
+                        const range = getVisibleRange(globalCandles.length, priceZoomState, 15);
+                        const visibleCount = Math.max(1, range.end - range.start);
+                        const candleWidth = (plotRight - plotLeft) / visibleCount;
+                        const localIndex = Math.max(0, Math.min(visibleCount - 1, Math.floor((relativeX - plotLeft) / candleWidth)));
+                        priceHoverIndex = range.start + localIndex;
+                        const candle = globalCandles[priceHoverIndex];
+                        const purchaseHit = pricePurchaseHitAreas
+                            .map(area => ({ area, distance: Math.hypot(relativeX - area.x, relativeY - area.y) }))
+                            .filter(candidate => candidate.distance <= candidate.area.hitRadius)
+                            .sort((a, b) => a.distance - b.distance)[0]?.area;
+                        hoveredPurchasePoint = purchaseHit ? purchaseHit.point : null;
+
+                        let tooltipX;
+                        let tooltipY;
+                        if (purchaseHit) {
+                            priceHoverIndex = purchaseHit.point.marketIndex;
+                            priceChartTooltip.className = 'chart-tooltip purchase-tooltip';
+                            priceChartTooltip.innerHTML = `<strong>Compra</strong>` +
+                                `<span class="purchase-amount">+${formatNumberEs(purchaseHit.point.usdc, 2)} USDC</span>` +
+                                `<span class="purchase-detail">${purchaseHit.point.date} · 09:00<br>` +
+                                `${purchaseHit.point.btc.toFixed(8)} BTC a ${formatNumberEs(purchaseHit.point.price, 2)} USDC</span>`;
+                            tooltipX = Math.min(rect.width - 174, Math.max(8, purchaseHit.x - 73));
+                            tooltipY = purchaseHit.y > 95 ? purchaseHit.y - 88 : purchaseHit.y + 14;
+                        } else {
+                            priceChartTooltip.className = 'chart-tooltip';
+                            priceChartTooltip.innerHTML = `<strong>${globalDatesDisplay[priceHoverIndex]}</strong><br>` +
+                                `Apertura: ${formatNumberEs(candle.open)}<br>` +
+                                `Máximo: ${formatNumberEs(candle.high)}<br>` +
+                                `Mínimo: ${formatNumberEs(candle.low)}<br>` +
+                                `${candle.closed ? 'Cierre' : 'Último precio'}: ${formatNumberEs(candle.close)} USDC` +
+                                (candle.closed ? '' : '<br><span style="color:#54bfff;font-weight:700;">Vela en formación</span>');
+                            tooltipX = Math.min(rect.width - 165, Math.max(8, relativeX + 14));
+                            tooltipY = Math.min(rect.height - 116, Math.max(8, relativeY + 14));
+                        }
+
+                        priceChartTooltip.style.left = `${tooltipX}px`;
+                        priceChartTooltip.style.top = `${tooltipY}px`;
+                        priceChartTooltip.style.display = 'block';
+                    }
+
+                    drawPriceChart();
+                });
+
+                priceChartCanvas.addEventListener('pointerleave', () => {
+                    priceHoverIndex = null;
+                    hoveredPurchasePoint = null;
+                    priceChartTooltip.style.display = 'none';
+                    drawPriceChart();
+                });
+
+                setupChartPanning(priceChartCanvas, 'price');
+            }
+
+            tvSeries = {
+                setMarkers(markers) {
+                    priceChartMarkers = Array.isArray(markers) ? markers : [];
+                    drawPriceChart();
+                }
+            };
+            tvChartInstance = { applyOptions: drawPriceChart };
+            drawPriceChart();
+        }
+
+        function renderPmcOverlayLines(overlays, visibleRange, margin, width, height, xForIndex, yForPrice) {
+            if (!pmcOverlayLayer) return;
+            pmcOverlayLayer.innerHTML = '';
+            const plotRight = width - margin.right;
+            const placements = overlays
+                .map(overlay => ({ overlay, y: yForPrice(overlay.price) }))
+                .filter(item => item.y >= margin.top && item.y <= height - margin.bottom)
+                .sort((a, b) => a.y - b.y);
+            if (!placements.length) return;
+
+            const minimumTagTop = 4;
+            const maximumTagTop = Math.max(minimumTagTop, height - 24);
+            let previousTop = minimumTagTop - 21;
+            placements.forEach(item => {
+                item.tagTop = Math.max(minimumTagTop, Math.min(maximumTagTop, item.y - 10), previousTop + 21);
+                previousTop = item.tagTop;
             });
-            
-            tvSeries.setData(globalCandles);
-            tvChartInstance.timeScale().fitContent();
-            
-            // Autoadaptar el gráfico si el usuario cambia el tamaño de la ventana
-            window.addEventListener('resize', () => { 
-                if(container.clientWidth > 0) tvChartInstance.applyOptions({ width: container.clientWidth }); 
+            if (placements[placements.length - 1].tagTop > maximumTagTop) {
+                let nextTop = maximumTagTop + 21;
+                for (let index = placements.length - 1; index >= 0; index--) {
+                    placements[index].tagTop = Math.min(placements[index].tagTop, nextTop - 21);
+                    nextTop = placements[index].tagTop;
+                }
+            }
+
+            placements.forEach(({ overlay, y, tagTop }) => {
+                const startsBeforeWindow = overlay.startIndex <= visibleRange.start;
+                const localStartIndex = overlay.startIndex - visibleRange.start;
+                const startX = startsBeforeWindow ? margin.left : xForIndex(localStartIndex);
+                const lineWidth = Math.max(0, plotRight - startX);
+                if (lineWidth <= 0) return;
+
+                const line = document.createElement('div');
+                line.className = `bot-pmc-line${overlay.active ? ' active' : ''}`;
+                line.style.left = `${startX}px`;
+                line.style.top = `${y}px`;
+                line.style.width = `${lineWidth}px`;
+                line.style.color = overlay.color;
+                line.style.setProperty('--pmc-color', overlay.color);
+
+                const tag = document.createElement('span');
+                tag.className = 'bot-pmc-tag';
+                tag.style.top = `${tagTop - y}px`;
+                tag.title = `${overlay.name}: precio medio de compra ${formatNumberEs(overlay.price, 2)} USDC`;
+
+                const name = document.createElement('span');
+                name.className = 'bot-pmc-tag-name';
+                name.textContent = `PMC · ${overlay.name}`;
+                const value = document.createElement('span');
+                value.className = 'bot-pmc-tag-value';
+                value.textContent = formatNumberEs(overlay.price, 2);
+                tag.append(name, value);
+                line.appendChild(tag);
+                pmcOverlayLayer.appendChild(line);
+            });
+        }
+
+        function drawPriceChart() {
+            if (!priceChartCanvas || !globalCandles.length) {
+                if (pmcOverlayLayer) pmcOverlayLayer.innerHTML = '';
+                if (marketEmptyState) marketEmptyState.hidden = false;
+                return;
+            }
+            if (marketEmptyState) marketEmptyState.hidden = true;
+            const container = document.getElementById('tv-chart');
+            const fitted = prepareCanvas(priceChartCanvas, container, 350);
+            if (!fitted) return;
+
+            const { context: ctx, width, height } = fitted;
+            const margin = { top: 16, right: 122, bottom: 28, left: 12 };
+            const plotWidth = Math.max(1, width - margin.left - margin.right);
+            const plotHeight = Math.max(1, height - margin.top - margin.bottom);
+            const visibleRange = getVisibleRange(globalCandles.length, priceZoomState, 15);
+            const visibleCandles = globalCandles.slice(visibleRange.start, visibleRange.end);
+            const visibleDates = globalDatesDisplay.slice(visibleRange.start, visibleRange.end);
+            if (!visibleCandles.length) return;
+
+            const visiblePmcOverlays = botPmcOverlays.filter(overlay =>
+                Number.isFinite(overlay.price) && overlay.price > 0 && overlay.startIndex < visibleRange.end
+            );
+            let minLow = Math.min(...visibleCandles.map(candle => candle.low));
+            let maxHigh = Math.max(...visibleCandles.map(candle => candle.high));
+            visiblePmcOverlays.forEach(overlay => {
+                minLow = Math.min(minLow, overlay.price);
+                maxHigh = Math.max(maxHigh, overlay.price);
+            });
+            const pricePadding = Math.max((maxHigh - minLow) * 0.07, maxHigh * 0.002);
+            const baseMinPrice = minLow - pricePadding;
+            const baseMaxPrice = maxHigh + pricePadding;
+            const priceRange = Math.max(1, baseMaxPrice - baseMinPrice);
+            const verticalShift = priceRange * priceZoomState.verticalPan;
+            const minPrice = baseMinPrice + verticalShift;
+            const maxPrice = baseMaxPrice + verticalShift;
+            const candleStep = plotWidth / visibleCandles.length;
+            const bodyWidth = Math.max(1.2, Math.min(8, candleStep * 0.66));
+            const xForIndex = index => margin.left + ((index + 0.5) * candleStep);
+            const yForPrice = price => margin.top + ((maxPrice - price) / priceRange) * plotHeight;
+
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#131722';
+            ctx.fillRect(0, 0, width, height);
+            ctx.font = '11px Segoe UI, sans-serif';
+            ctx.textBaseline = 'middle';
+
+            for (let line = 0; line <= 5; line++) {
+                const y = margin.top + (plotHeight * line / 5);
+                const price = maxPrice - (priceRange * line / 5);
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(42, 46, 57, 0.72)';
+                ctx.lineWidth = 1;
+                ctx.moveTo(margin.left, Math.round(y) + 0.5);
+                ctx.lineTo(width - margin.right, Math.round(y) + 0.5);
+                ctx.stroke();
+                ctx.fillStyle = '#8b99af';
+                ctx.fillText(formatNumberEs(price, 0), width - margin.right + 9, y);
+            }
+
+            for (let line = 0; line <= 5; line++) {
+                const index = Math.min(visibleCandles.length - 1, Math.round((visibleCandles.length - 1) * line / 5));
+                const x = xForIndex(index);
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(42, 46, 57, 0.48)';
+                ctx.moveTo(Math.round(x) + 0.5, margin.top);
+                ctx.lineTo(Math.round(x) + 0.5, height - margin.bottom);
+                ctx.stroke();
+                ctx.fillStyle = '#8b99af';
+                ctx.textAlign = line === 0 ? 'left' : (line === 5 ? 'right' : 'center');
+                ctx.fillText(visibleDates[index].slice(0, 5), x, height - 11);
+            }
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(margin.left, margin.top, plotWidth, plotHeight);
+            ctx.clip();
+
+            visibleCandles.forEach((candle, index) => {
+                const x = xForIndex(index);
+                const isUp = candle.close >= candle.open;
+                const color = isUp ? '#26a69a' : '#ef5350';
+                const openY = yForPrice(candle.open);
+                const closeY = yForPrice(candle.close);
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = Math.max(1, Math.min(1.5, bodyWidth / 2));
+                ctx.beginPath();
+                ctx.moveTo(x, yForPrice(candle.high));
+                ctx.lineTo(x, yForPrice(candle.low));
+                ctx.stroke();
+
+                ctx.fillStyle = color;
+                ctx.fillRect(x - bodyWidth / 2, Math.min(openY, closeY), bodyWidth, Math.max(1, Math.abs(closeY - openY)));
+
+                if (!candle.closed) {
+                    ctx.setLineDash([2, 2]);
+                    ctx.strokeStyle = '#54bfff';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x - bodyWidth / 2 - 1, Math.min(openY, closeY) - 1, bodyWidth + 2, Math.max(3, Math.abs(closeY - openY) + 2));
+                    ctx.setLineDash([]);
+                }
+            });
+
+            // Cada ejecución DCA aparece como un círculo exactamente en su fecha y precio.
+            pricePurchaseHitAreas = [];
+            pricePurchasePoints.forEach(point => {
+                if (point.marketIndex < visibleRange.start || point.marketIndex >= visibleRange.end) return;
+                const localIndex = point.marketIndex - visibleRange.start;
+                const x = xForIndex(localIndex);
+                const y = yForPrice(point.price);
+                if (y < margin.top || y > height - margin.bottom) return;
+
+                const hovered = hoveredPurchasePoint && hoveredPurchasePoint.marketTime === point.marketTime;
+                const radius = hovered ? 6.5 : Math.max(2.4, Math.min(5.2, candleStep * 0.34));
+                if (hovered) {
+                    ctx.beginPath();
+                    ctx.fillStyle = 'rgba(0, 102, 255, .22)';
+                    ctx.arc(x, y, 11, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.beginPath();
+                ctx.fillStyle = hovered ? '#0066ff' : '#101b31';
+                ctx.strokeStyle = '#0b78ff';
+                ctx.lineWidth = hovered ? 2.5 : 1.8;
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                pricePurchaseHitAreas.push({ x, y, hitRadius: Math.max(8, radius + 4), point });
+            });
+
+            priceChartMarkers.forEach(marker => {
+                const globalIndex = globalCandles.findIndex(candle => candle.time === marker.time);
+                if (globalIndex < visibleRange.start || globalIndex >= visibleRange.end) return;
+
+                const index = globalIndex - visibleRange.start;
+                const candle = visibleCandles[index];
+                const x = xForIndex(index);
+                const below = marker.position === 'belowBar';
+                const y = yForPrice(below ? candle.low : candle.high) + (below ? 9 : -9);
+
+                ctx.fillStyle = marker.color || '#f7a859';
+                ctx.beginPath();
+                if (below) {
+                    ctx.moveTo(x, y - 7); ctx.lineTo(x - 5, y + 2); ctx.lineTo(x + 5, y + 2);
+                } else {
+                    ctx.moveTo(x, y + 7); ctx.lineTo(x - 5, y - 2); ctx.lineTo(x + 5, y - 2);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.font = '600 10px Segoe UI, sans-serif';
+                ctx.textAlign = index < visibleCandles.length / 2 ? 'left' : 'right';
+                ctx.textBaseline = below ? 'top' : 'bottom';
+                ctx.fillText(marker.text || '', x + (index < visibleCandles.length / 2 ? 7 : -7), y + (below ? 4 : -4));
+            });
+
+            ctx.restore();
+
+            const lastPrice = visibleCandles[visibleCandles.length - 1].close;
+            const lastY = yForPrice(lastPrice);
+            if (lastY >= margin.top && lastY <= height - margin.bottom) {
+                ctx.setLineDash([4, 4]);
+                ctx.strokeStyle = '#8b99af';
+                ctx.beginPath();
+                ctx.moveTo(margin.left, lastY);
+                ctx.lineTo(width - margin.right, lastY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#465064';
+                ctx.fillRect(width - margin.right, lastY - 9, margin.right, 18);
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = '600 11px Segoe UI, sans-serif';
+                ctx.fillText(formatNumberEs(lastPrice, 2), width - margin.right / 2, lastY);
+            }
+
+            if (Number.isInteger(priceHoverIndex) && priceHoverIndex >= visibleRange.start && priceHoverIndex < visibleRange.end) {
+                const localHoverIndex = priceHoverIndex - visibleRange.start;
+                const x = xForIndex(localHoverIndex);
+                const y = yForPrice(hoveredPurchasePoint ? hoveredPurchasePoint.price : globalCandles[priceHoverIndex].close);
+                ctx.setLineDash([3, 4]);
+                ctx.strokeStyle = 'rgba(209, 212, 220, 0.7)';
+                ctx.beginPath();
+                ctx.moveTo(x, margin.top); ctx.lineTo(x, height - margin.bottom);
+                ctx.moveTo(margin.left, y); ctx.lineTo(width - margin.right, y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            renderPmcOverlayLines(visiblePmcOverlays, visibleRange, margin, width, height, xForIndex, yForPrice);
+        }
+
+        function renderPortfolioChart(labels, portfolioValues, dcaOnlyValues, investedValues) {
+            portfolioChartState = { labels, portfolioValues, dcaOnlyValues, investedValues };
+            mainChart = { destroy() {} };
+            drawPortfolioChart();
+        }
+
+        function drawPortfolioChart() {
+            if (!portfolioChartState) return;
+            const canvas = document.getElementById('mainChart');
+            const container = canvas.parentElement;
+            const fitted = prepareCanvas(canvas, container, 250);
+            if (!fitted) return;
+
+            const { context: ctx, width, height } = fitted;
+            const visibleRange = getVisibleRange(portfolioChartState.labels.length, portfolioZoomState, 8);
+            const labels = portfolioChartState.labels.slice(visibleRange.start, visibleRange.end);
+            const portfolioValues = portfolioChartState.portfolioValues.slice(visibleRange.start, visibleRange.end);
+            const dcaOnlyValues = portfolioChartState.dcaOnlyValues.slice(visibleRange.start, visibleRange.end);
+            const investedValues = portfolioChartState.investedValues.slice(visibleRange.start, visibleRange.end);
+            if (!labels.length) return;
+            const margin = { top: 16, right: 18, bottom: 26, left: 72 };
+            const plotWidth = Math.max(1, width - margin.left - margin.right);
+            const plotHeight = Math.max(1, height - margin.top - margin.bottom);
+            const baseMaxValue = Math.max(1, ...portfolioValues, ...dcaOnlyValues, ...investedValues) * 1.08;
+            const valueRange = baseMaxValue;
+            const verticalShift = valueRange * portfolioZoomState.verticalPan;
+            const minValue = verticalShift;
+            const maxValue = baseMaxValue + verticalShift;
+            const xForIndex = index => margin.left + (index / Math.max(1, labels.length - 1)) * plotWidth;
+            const yForValue = value => margin.top + ((maxValue - value) / valueRange) * plotHeight;
+
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = '#131b2f';
+            ctx.fillRect(0, 0, width, height);
+            ctx.font = '11px Segoe UI, sans-serif';
+            ctx.textBaseline = 'middle';
+
+            for (let line = 0; line <= 4; line++) {
+                const y = margin.top + (plotHeight * line / 4);
+                const value = maxValue - (valueRange * line / 4);
+                ctx.beginPath();
+                ctx.strokeStyle = '#2a354d';
+                ctx.moveTo(margin.left, Math.round(y) + 0.5);
+                ctx.lineTo(width - margin.right, Math.round(y) + 0.5);
+                ctx.stroke();
+                ctx.fillStyle = '#8b99af';
+                ctx.textAlign = 'right';
+                ctx.fillText(formatNumberEs(value, 0), margin.left - 9, y);
+            }
+
+            for (let line = 0; line <= 5; line++) {
+                const index = Math.min(labels.length - 1, Math.round((labels.length - 1) * line / 5));
+                const x = xForIndex(index);
+                ctx.fillStyle = '#8b99af';
+                ctx.textAlign = line === 0 ? 'left' : (line === 5 ? 'right' : 'center');
+                ctx.fillText(labels[index].slice(0, 5), x, height - 10);
+            }
+
+            const drawLine = (values, color, dashed, lineWidth = 2) => {
+                ctx.beginPath();
+                values.forEach((value, index) => {
+                    const x = xForIndex(index);
+                    const y = yForValue(value);
+                    if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.setLineDash(dashed ? [5, 5] : []);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.stroke();
+                ctx.setLineDash([]);
+            };
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(margin.left, margin.top, plotWidth, plotHeight);
+            ctx.clip();
+
+            if (portfolioValues.length) {
+                ctx.beginPath();
+                portfolioValues.forEach((value, index) => {
+                    const x = xForIndex(index);
+                    const y = yForValue(value);
+                    if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.lineTo(xForIndex(portfolioValues.length - 1), height - margin.bottom);
+                ctx.lineTo(xForIndex(0), height - margin.bottom);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(255, 176, 32, 0.08)';
+                ctx.fill();
+            }
+
+            drawLine(dcaOnlyValues, '#5aa9ff', false, 2.3);
+            drawLine(portfolioValues, '#ffb020', false, 2.8);
+            drawLine(investedValues, '#8b99af', true);
+            ctx.restore();
+        }
+
+        function scheduleChartsResize() {
+            if (resizeAnimationFrame) cancelAnimationFrame(resizeAnimationFrame);
+            resizeAnimationFrame = requestAnimationFrame(() => {
+                drawPriceChart();
+                drawPortfolioChart();
             });
         }
 
@@ -402,12 +2023,48 @@
             document.getElementById('input-budget').disabled = !document.getElementById('toggle-budget').checked;
             document.getElementById('input-target').disabled = !document.getElementById('toggle-target').checked;
             document.getElementById('input-executions').disabled = !document.getElementById('toggle-executions').checked;
+            const earnEnabled = document.getElementById('toggle-earn').checked;
+            document.getElementById('input-apy').disabled = !earnEnabled;
+            document.getElementById('input-earn-frequency').disabled = !earnEnabled;
+            document.getElementById('earn-fields').classList.toggle('is-disabled', !earnEnabled);
+            updateSummaryText();
+        }
+
+        function syncSimulationDateBounds(changedField = '') {
+            const startInput = document.getElementById('input-start-date');
+            const endInput = document.getElementById('input-end-date');
+            if (!startInput || !endInput) return;
+
+            const today = todayIsoUtc();
+            startInput.max = today;
+            endInput.max = today;
+            if (!startInput.value) startInput.value = MARKET_START_DATE;
+            if (!endInput.value) endInput.value = today;
+
+            if (startInput.value > endInput.value) {
+                if (changedField === 'end') startInput.value = endInput.value;
+                else endInput.value = startInput.value;
+            }
+
+            endInput.min = startInput.value || MARKET_START_DATE;
+            startInput.max = endInput.value && endInput.value < today ? endInput.value : today;
             updateSummaryText();
         }
 
         function updateSummaryText() {
-            let daily = document.getElementById('input-daily').value;
-            let summary = `El bot invertirá <strong>${daily} USDC</strong> en BTC cada 1 días a las 09:00.`;
+            const daily = document.getElementById('input-daily').value;
+            const startDate = document.getElementById('input-start-date').value || MARKET_START_DATE;
+            const endDate = document.getElementById('input-end-date').value || todayIsoUtc();
+            const earnEnabled = document.getElementById('toggle-earn').checked;
+            const apy = document.getElementById('input-apy').value;
+            const earnFrequency = document.getElementById('input-earn-frequency').value;
+            let summary = `La simulación abarca del <strong>${formatIsoDateEs(startDate)}</strong> al <strong>${formatIsoDateEs(endDate)}</strong>, ambos inclusive. El bot invertirá <strong>${daily} USDC</strong> en BTC cada día a las 09:00.`;
+
+            if (earnEnabled) {
+                summary += `<br><br>Los BTC pasarán automáticamente a <strong>Bit2Me Earn cada ${earnFrequency} días</strong> y generarán un <strong>${apy}% APY</strong> con reinversión diaria.`;
+            } else {
+                summary += `<br><br>La transferencia automática a Earn está <strong>desactivada</strong>.`;
+            }
             
             let conditions = [];
             if(document.getElementById('toggle-budget').checked) {
@@ -423,7 +2080,7 @@
             if(conditions.length > 0) {
                 summary += `<br><br>Se detendrá cuando <strong>` + conditions.join(' o ') + `</strong>.`;
             } else {
-                summary += `<br><br>El bot se ejecutará indefinidamente hasta que lo detengas.`;
+                summary += `<br><br>Si no se alcanza otra condición, la simulación finalizará en la fecha de cierre indicada.`;
             }
             
             document.getElementById('bot-summary-box').innerHTML = summary;
@@ -433,163 +2090,421 @@
             return num.toLocaleString('es-ES', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
         }
 
+        function showSellCalculatorError(message = '') {
+            const element = document.getElementById('sell-calculator-error');
+            element.textContent = message;
+            element.classList.toggle('visible', Boolean(message));
+        }
+
+        function calculateSellOrders() {
+            const targetAverage = Number(document.getElementById('sell-target-average').value);
+            const requestedBtc = Number(document.getElementById('sell-total-btc').value);
+            const orderCountRaw = Number(document.getElementById('sell-order-count').value);
+            const spacingPercent = Number(document.getElementById('sell-order-spacing').value);
+            const tbody = document.getElementById('sell-orders-body');
+            const clearResults = () => {
+                document.getElementById('sell-result-average').textContent = '—';
+                document.getElementById('sell-result-btc').textContent = '—';
+                document.getElementById('sell-result-usdc').textContent = '—';
+                document.getElementById('sell-result-invested').textContent = '—';
+                document.getElementById('sell-result-difference').textContent = '—';
+                document.getElementById('sell-result-difference-absolute').textContent = '—';
+                document.getElementById('sell-result-range').textContent = '—';
+                document.getElementById('sell-result-difference-card').classList.remove('positive', 'negative');
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#78879f;">Revisa los datos introducidos.</td></tr>';
+            };
+
+            let error = '';
+            if (!Number.isFinite(targetAverage) || targetAverage <= 0) error = 'Introduce un precio promedio objetivo superior a cero.';
+            else if (!Number.isFinite(requestedBtc) || requestedBtc <= 0) error = 'Introduce una cantidad de BTC superior a cero.';
+            else if (!Number.isInteger(orderCountRaw) || orderCountRaw < 1 || orderCountRaw > 50) error = 'El número de órdenes debe ser un entero entre 1 y 50.';
+            else if (!Number.isFinite(spacingPercent) || spacingPercent < 0 || spacingPercent > 50) error = 'La separación debe estar entre 0% y 50%.';
+            else if (lastSimulationTotalBtc > 0 && requestedBtc > lastSimulationTotalBtc + 0.000000005) error = 'La cantidad supera el saldo BTC total disponible del bot.';
+
+            const orderCount = Math.round(orderCountRaw);
+            const totalSatoshis = Math.round(requestedBtc * 100000000);
+            if (!error && totalSatoshis < orderCount) error = 'La cantidad es demasiado pequeña para repartir al menos un satoshi en cada orden.';
+
+            const center = (orderCount - 1) / 2;
+            const spacingRate = spacingPercent / 100;
+            if (!error && targetAverage * (1 - center * spacingRate) <= 0) {
+                error = 'La separación es demasiado grande para este número de órdenes.';
+            }
+
+            if (error) {
+                showSellCalculatorError(error);
+                clearResults();
+                return [];
+            }
+
+            const baseSatoshis = Math.floor(totalSatoshis / orderCount);
+            const quantities = Array.from({ length: orderCount }, (_, index) =>
+                (index === orderCount - 1 ? totalSatoshis - baseSatoshis * (orderCount - 1) : baseSatoshis) / 100000000);
+            const prices = Array.from({ length: orderCount }, (_, index) =>
+                Math.round(targetAverage * (1 + (index - center) * spacingRate) * 100) / 100);
+
+            // Ajustamos el último nivel para que el promedio ponderado coincida
+            // con el objetivo incluso tras repartir BTC con precisión de 8 decimales.
+            if (orderCount > 1) {
+                const targetNotional = requestedBtc * targetAverage;
+                const previousNotional = quantities.slice(0, -1)
+                    .reduce((sum, quantity, index) => sum + quantity * prices[index], 0);
+                prices[orderCount - 1] = Math.round(((targetNotional - previousNotional) / quantities[orderCount - 1]) * 100) / 100;
+            }
+
+            const orders = quantities.map((quantity, index) => ({
+                number: index + 1,
+                quantity,
+                price: prices[index],
+                notional: quantity * prices[index]
+            }));
+            const distributedBtc = orders.reduce((sum, order) => sum + order.quantity, 0);
+            const totalNotional = orders.reduce((sum, order) => sum + order.notional, 0);
+            const resultingAverage = totalNotional / distributedBtc;
+            const hasInvestmentBasis = lastSimulationTotalBtc > 0 && lastSimulationInvestedFiat > 0;
+            const soldShare = hasInvestmentBasis ? Math.min(1, distributedBtc / lastSimulationTotalBtc) : 0;
+            const allocatedInvestment = lastSimulationInvestedFiat * soldShare;
+            const fiatDifference = totalNotional - allocatedInvestment;
+            const fiatDifferencePercent = allocatedInvestment > 0 ? (fiatDifference / allocatedInvestment) * 100 : 0;
+
+            tbody.innerHTML = orders.map(order => `
+                <tr>
+                    <td><span class="sell-order-number">Venta ${order.number}</span></td>
+                    <td class="sell-quantity">${order.quantity.toFixed(8)} BTC</td>
+                    <td class="sell-price">${formatNumberEs(order.price, 2)} USDC</td>
+                    <td>${formatNumberEs(order.notional, 2)} USDC</td>
+                </tr>`).join('');
+
+            document.getElementById('sell-result-average').textContent = `${formatNumberEs(resultingAverage, 2)} USDC`;
+            document.getElementById('sell-result-btc').textContent = `${distributedBtc.toFixed(8)} BTC`;
+            document.getElementById('sell-result-usdc').textContent = `${formatNumberEs(totalNotional, 2)} USDC`;
+            document.getElementById('sell-result-invested').textContent = hasInvestmentBasis ? `${formatNumberEs(allocatedInvestment, 2)} USDC` : '—';
+            const differenceCard = document.getElementById('sell-result-difference-card');
+            differenceCard.classList.remove('positive', 'negative');
+            if (hasInvestmentBasis) {
+                const sign = fiatDifference >= 0 ? '+' : '';
+                document.getElementById('sell-result-difference').textContent = `${sign}${formatNumberEs(fiatDifferencePercent, 2)}%`;
+                document.getElementById('sell-result-difference-absolute').textContent = `${sign}${formatNumberEs(fiatDifference, 2)} USDC`;
+                differenceCard.classList.add(fiatDifference >= 0 ? 'positive' : 'negative');
+            } else {
+                document.getElementById('sell-result-difference').textContent = '—';
+                document.getElementById('sell-result-difference-absolute').textContent = 'Sin base de inversión';
+            }
+            document.getElementById('sell-result-range').textContent = `${formatNumberEs(orders[0].price, 2)} — ${formatNumberEs(orders[orders.length - 1].price, 2)}`;
+            showSellCalculatorError('');
+            return orders;
+        }
+
+        function updateSellCalculatorContext(contextKey, totalBtc, investedFiat, finalPrice, averagePrice) {
+            lastSimulationTotalBtc = Math.max(0, totalBtc);
+            lastSimulationInvestedFiat = Math.max(0, investedFiat);
+            document.getElementById('sell-available-btc').textContent = `${lastSimulationTotalBtc.toFixed(8)} BTC`;
+
+            if (sellCalculatorContextKey !== contextKey) {
+                sellCalculatorContextKey = contextKey;
+                if (lastSimulationTotalBtc > 0) {
+                    document.getElementById('sell-total-btc').value = lastSimulationTotalBtc.toFixed(8);
+                }
+                const referencePrice = Math.max(finalPrice || 0, averagePrice || 0);
+                if (referencePrice > 0) {
+                    document.getElementById('sell-target-average').value = String(Math.ceil(referencePrice * 1.15 / 100) * 100);
+                }
+            }
+            calculateSellOrders();
+        }
+
+        function setupSellCalculator() {
+            ['sell-target-average', 'sell-total-btc', 'sell-order-count', 'sell-order-spacing']
+                .forEach(id => document.getElementById(id).addEventListener('input', calculateSellOrders));
+            document.getElementById('sell-calculate-button').addEventListener('click', calculateSellOrders);
+            document.querySelectorAll('[data-sell-percent]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const percentage = Number(button.dataset.sellPercent) / 100;
+                    if (lastSimulationTotalBtc <= 0) return;
+                    document.getElementById('sell-total-btc').value = (lastSimulationTotalBtc * percentage).toFixed(8);
+                    calculateSellOrders();
+                });
+            });
+            calculateSellOrders();
+        }
+
         function runSimulation() {
-            if(globalDates.length === 0) return;
-            
-            let botName = document.getElementById('input-bot-name').value;
-            document.getElementById('sidebar-bot-name').innerText = botName;
+            if (globalDates.length === 0) return;
+
+            const config = readBotForm();
+            const botName = config.name;
+            const startDate = config.startDate;
+            const endDate = config.endDate;
+            const dailyInvest = config.dailyInvest;
+            const useBudget = config.useBudget;
+            const maxBudget = config.maxBudget;
+            const useTarget = config.useTarget;
+            const targetBtc = config.targetBtc;
+            const useExecutions = config.useExecutions;
+            const maxExecutions = config.maxExecutions;
+            const useEarn = config.useEarn;
+            const apyPercent = config.apyPercent;
+            const earnFrequency = config.earnFrequency;
+            const annualYield = apyPercent / 100;
+            const dailyEarnRate = useEarn ? Math.pow(1 + annualYield, 1 / 365) - 1 : 0;
+            const firstEligibleIndex = globalDates.findIndex(date => date >= startDate);
+            const simulationEndIndex = getSimulationEndIndex(endDate);
+            const strategyStarted = firstEligibleIndex >= 0 && firstEligibleIndex <= simulationEndIndex;
+            const historicalWindowClosed = endDate < todayIsoUtc();
+
             document.getElementById('header-bot-name').innerText = botName;
-            
-            let dailyInvest = parseFloat(document.getElementById('input-daily').value);
-            document.getElementById('sidebar-amount').innerText = dailyInvest + ' USDC';
 
-            let useBudget = document.getElementById('toggle-budget').checked;
-            let maxBudget = parseFloat(document.getElementById('input-budget').value);
-            
-            let useTarget = document.getElementById('toggle-target').checked;
-            let targetBtc = parseFloat(document.getElementById('input-target').value);
-            
-            let useExecutions = document.getElementById('toggle-executions').checked;
-            let maxExecutions = parseInt(document.getElementById('input-executions').value);
-
+            let walletBalance = 0;
+            let earnBalance = 0;
+            let principalBtc = 0;
+            let totalEarnRewards = 0;
             let totalInvested = 0;
-            let totalBtc = 0;
             let executions = 0;
-            
-            let portfolioHistory = [];
-            let investedHistory = [];
-            let ordersHistory = [];
+            let purchasesSinceTransfer = 0;
+            let earnTransfers = 0;
+            let purchasesActive = true;
+            let firstPurchaseIndex = -1;
+            let lastPurchaseIndex = -1;
 
-            for (let i = 0; i < globalDates.length; i++) {
-                let price = globalPrices[i];
-                let dateStrDisplay = globalDatesDisplay[i];
-                
-                let stop = false;
-                if(useBudget && (totalInvested + dailyInvest) > maxBudget) stop = true;
-                if(useTarget && totalBtc >= targetBtc) stop = true;
-                if(useExecutions && executions >= maxExecutions) stop = true;
-                
-                if(!stop) {
-                    let btcBought = dailyInvest / price;
-                    totalBtc += btcBought;
-                    totalInvested += dailyInvest;
-                    executions++;
-                    
-                    ordersHistory.push({
-                        status: 'Completado', date: dateStrDisplay, time: '(09:00:00)', price: price, btc: btcBought, usdc: dailyInvest
-                    });
+            const portfolioHistory = [];
+            const dcaOnlyHistory = [];
+            const investedHistory = [];
+            const ordersHistory = [];
+
+            const transferWalletToEarn = () => {
+                if (!useEarn || walletBalance <= 0) return 0;
+                const transferred = walletBalance;
+                earnBalance += transferred;
+                walletBalance = 0;
+                earnTransfers++;
+                return transferred;
+            };
+
+            for (let i = 0; i <= simulationEndIndex; i++) {
+                const price = globalPrices[i];
+                const dateStrDisplay = globalDatesDisplay[i];
+                const eligibleForStrategy = strategyStarted && i >= firstEligibleIndex;
+
+                // El saldo que ya estaba en Earn genera una recompensa diaria equivalente al APY.
+                if (eligibleForStrategy && useEarn && earnBalance > 0 && dailyEarnRate > 0) {
+                    const dailyReward = earnBalance * dailyEarnRate;
+                    earnBalance += dailyReward;
+                    totalEarnRewards += dailyReward;
                 }
 
+                if (eligibleForStrategy) {
+                    const totalBtcBeforePurchase = walletBalance + earnBalance;
+                    let stop = false;
+                    if (!purchasesActive) stop = true;
+                    if (useBudget && (totalInvested + dailyInvest) > maxBudget) stop = true;
+                    if (useTarget && totalBtcBeforePurchase >= targetBtc) stop = true;
+                    if (useExecutions && executions >= maxExecutions) stop = true;
+
+                    if (!stop) {
+                        const btcBought = price > 0 ? dailyInvest / price : 0;
+                        walletBalance += btcBought;
+                        principalBtc += btcBought;
+                        totalInvested += dailyInvest;
+                        executions++;
+                        purchasesSinceTransfer++;
+                        if (firstPurchaseIndex < 0) firstPurchaseIndex = i;
+                        lastPurchaseIndex = i;
+
+                        const order = {
+                            status: 'Completado',
+                            date: dateStrDisplay,
+                            time: '(09:00:00)',
+                            marketIndex: i,
+                            marketTime: globalCandles[i].time,
+                            price,
+                            btc: btcBought,
+                            usdc: dailyInvest,
+                            earnTransfer: 0,
+                            finalEarnTransfer: false
+                        };
+
+                        if (useEarn && purchasesSinceTransfer >= earnFrequency) {
+                            order.earnTransfer = transferWalletToEarn();
+                            purchasesSinceTransfer = 0;
+                        }
+                        ordersHistory.push(order);
+                    } else if (purchasesActive) {
+                        // Al detenerse el DCA, el remanente pendiente también se envía a Earn.
+                        purchasesActive = false;
+                        const finalTransfer = transferWalletToEarn();
+                        purchasesSinceTransfer = 0;
+                        if (finalTransfer > 0 && ordersHistory.length) {
+                            const lastOrder = ordersHistory[ordersHistory.length - 1];
+                            lastOrder.earnTransfer += finalTransfer;
+                            lastOrder.finalEarnTransfer = true;
+                        }
+                    }
+                }
+
+                const totalBtc = walletBalance + earnBalance;
                 portfolioHistory.push(totalBtc * price);
+                dcaOnlyHistory.push(principalBtc * price);
                 investedHistory.push(totalInvested);
-                
-                if(stop) break; 
             }
 
-            // Marcadores TradingView adaptados al formato Unix
-            const markers = [];
-            if(executions > 0) {
-                // El formato unix time es lo que espera ahora la serie
-                markers.push({ time: globalCandles[0].time, position: 'belowBar', color: '#26a69a', shape: 'arrowUp', text: 'Inicio DCA' });
-                if(executions < globalDates.length) {
-                    markers.push({ time: globalCandles[executions - 1].time, position: 'aboveBar', color: '#f7a859', shape: 'arrowDown', text: 'Bot Detenido' });
+            const totalBtc = walletBalance + earnBalance;
+            const finalPrice = globalPrices[simulationEndIndex] || 0;
+            const reachedStopCondition =
+                (useBudget && (totalInvested + dailyInvest) > maxBudget) ||
+                (useTarget && totalBtc >= targetBtc) ||
+                (useExecutions && executions >= maxExecutions);
+            const botStopped = strategyStarted && (!purchasesActive || reachedStopCondition);
+
+            // Si el límite se alcanza justo en la última vela disponible, también
+            // transferimos a Earn el remanente que aún estuviera en Wallet.
+            if (botStopped && purchasesActive) {
+                purchasesActive = false;
+                const finalTransfer = transferWalletToEarn();
+                if (finalTransfer > 0 && ordersHistory.length) {
+                    const lastOrder = ordersHistory[ordersHistory.length - 1];
+                    lastOrder.earnTransfer += finalTransfer;
+                    lastOrder.finalEarnTransfer = true;
                 }
             }
-            if(tvSeries) tvSeries.setMarkers(markers);
+
+            pricePurchasePoints = ordersHistory.map(order => ({
+                marketIndex: order.marketIndex,
+                marketTime: order.marketTime,
+                date: order.date,
+                price: order.price,
+                btc: order.btc,
+                usdc: order.usdc
+            }));
+            hoveredPurchasePoint = null;
+
+            // Marcadores del inicio y de la última compra DCA.
+            const markers = [];
+            if (executions > 0 && firstPurchaseIndex >= 0) {
+                markers.push({ time: globalCandles[firstPurchaseIndex].time, position: 'belowBar', color: '#26a69a', shape: 'arrowUp', text: 'Inicio DCA' });
+                if ((botStopped || historicalWindowClosed) && lastPurchaseIndex >= 0) {
+                    markers.push({ time: globalCandles[lastPurchaseIndex].time, position: 'aboveBar', color: '#f7a859', shape: 'arrowDown', text: 'Fin compras DCA' });
+                }
+            }
+            if (tvSeries) tvSeries.setMarkers(markers);
 
             // Stats
-            let avgPrice = totalBtc > 0 ? (totalInvested / totalBtc) : 0;
-            let currentValue = totalBtc * globalPrices[executions > 0 ? executions-1 : 0];
-            let profit = currentValue - totalInvested;
-            let roi = totalInvested > 0 ? (profit / totalInvested) * 100 : 0;
+            const avgPrice = principalBtc > 0 ? totalInvested / principalBtc : 0;
+            refreshBotPmcOverlays(config);
+            const currentValue = totalBtc * finalPrice;
+            const profit = currentValue - totalInvested;
+            const roi = totalInvested > 0 ? (profit / totalInvested) * 100 : 0;
+            const btcGrowthAbsolute = Math.max(0, totalBtc - principalBtc);
+            const btcGrowthPercent = principalBtc > 0 ? (btcGrowthAbsolute / principalBtc) * 100 : 0;
 
             document.getElementById('stat-invested').innerText = formatNumberEs(totalInvested) + ' USDC';
-            document.getElementById('stat-btc').innerText = totalBtc.toFixed(6) + ' BTC';
+            document.getElementById('stat-btc').innerText = totalBtc.toFixed(8) + ' BTC';
+            document.getElementById('stat-btc-no-earn').innerText = principalBtc.toFixed(8) + ' BTC';
+            document.getElementById('stat-btc-growth').innerText = `+${formatNumberEs(btcGrowthPercent, 4)}%`;
+            document.getElementById('stat-btc-growth-absolute').innerText = `+${btcGrowthAbsolute.toFixed(8)} BTC acumulados`;
+            document.getElementById('stat-earn-balance').innerText = earnBalance.toFixed(8) + ' BTC';
+            document.getElementById('stat-earn-rewards').innerText = totalEarnRewards.toFixed(8) + ' BTC';
+            document.getElementById('stat-earn-rewards-usdc').innerText = formatNumberEs(totalEarnRewards * finalPrice) + (historicalWindowClosed ? ' USDC al cierre de simulación' : ' USDC al precio actual');
+            document.getElementById('stat-earn-transfers').innerText = useEarn
+                ? `${earnTransfers} ${earnTransfers === 1 ? 'transferencia' : 'transferencias'} · ${walletBalance.toFixed(8)} BTC en Wallet`
+                : 'Automatización desactivada';
             document.getElementById('stat-avg-price').innerText = formatNumberEs(avgPrice) + ' USDC';
             document.getElementById('stat-executions').innerText = executions;
-            
-            // Status y Next Exec
-            let botStatusBadge = document.getElementById('bot-status');
-            let nextExecBox = document.getElementById('next-exec-box');
-            
-            if (executions < globalDates.length) {
-                botStatusBadge.innerText = 'Detenido';
-                botStatusBadge.className = 'status-badge';
-                nextExecBox.className = 'next-execution-box paused';
-                nextExecBox.innerHTML = '<i class="fa-solid fa-circle-pause"></i><span id="next-exec-text">Próxima ejecución: El bot se encuentra pausado por condiciones de parada.</span>';
-            } else {
-                botStatusBadge.innerText = 'Activo';
-                botStatusBadge.className = 'status-badge completed';
+
+            // Estado del bot y próxima ejecución.
+            const nextExecBox = document.getElementById('next-exec-box');
+            const runtimeStatus = !strategyStarted ? 'Programado' : (historicalWindowClosed ? 'Finalizado' : (botStopped ? 'Detenido' : 'Activo'));
+            const runtimeBotId = draftBot ? draftBot.id : activeBotId;
+            botRuntime[runtimeBotId] = { status: runtimeStatus, totalInvested, profit, executions };
+            updateSellCalculatorContext(runtimeBotId, totalBtc, totalInvested, finalPrice, avgPrice);
+            renderBotsList();
+
+            if (!strategyStarted) {
                 nextExecBox.className = 'next-execution-box';
-                let nextDate = globalDatesDisplay[executions] || "Mañana";
-                nextExecBox.innerHTML = `<i class="fa-regular fa-clock"></i><span id="next-exec-text">Próxima ejecución: ${nextDate} 09:00:00</span>`;
+                nextExecBox.innerHTML = `<i class="fa-regular fa-clock"></i><span id="next-exec-text">El bot comenzará sus compras el ${formatIsoDateEs(startDate)} a las 09:00.</span>`;
+            } else if (historicalWindowClosed) {
+                nextExecBox.className = 'next-execution-box paused';
+                const stopDetail = botStopped ? ' Las compras ya se habían detenido por las condiciones de parada.' : '';
+                nextExecBox.innerHTML = `<i class="fa-solid fa-circle-pause"></i><span id="next-exec-text">Simulación histórica finalizada el ${formatIsoDateEs(endDate)}.${stopDetail} No se calculan compras ni rendimientos posteriores.</span>`;
+            } else if (botStopped) {
+                nextExecBox.className = 'next-execution-box paused';
+                nextExecBox.innerHTML = useEarn && earnBalance > 0
+                    ? '<i class="fa-solid fa-circle-pause"></i><span id="next-exec-text">Las compras DCA están pausadas. El saldo depositado en Earn continúa generando recompensas.</span>'
+                    : '<i class="fa-solid fa-circle-pause"></i><span id="next-exec-text">Próxima ejecución: El bot se encuentra pausado por condiciones de parada.</span>';
+            } else {
+                nextExecBox.className = 'next-execution-box';
+                nextExecBox.innerHTML = '<i class="fa-regular fa-clock"></i><span id="next-exec-text">Próxima ejecución: Mañana 09:00:00</span>';
             }
 
-            let profitStr = profit >= 0 ? '+' : '';
+            const profitStr = profit >= 0 ? '+' : '';
             document.getElementById('top-profit').innerText = profitStr + formatNumberEs(profit) + ' USDC (' + profitStr + formatNumberEs(roi) + '%)';
             document.getElementById('top-profit').style.color = profit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
 
-            // Padding del chart Portfolio
-            while(portfolioHistory.length < globalDates.length) {
-                let lastBtc = totalBtc;
-                let currentPrice = globalPrices[portfolioHistory.length];
-                portfolioHistory.push(lastBtc * currentPrice);
-                investedHistory.push(totalInvested);
-            }
-
-            // Dibujar Chart Portfolio
-            if (mainChart) mainChart.destroy();
-            Chart.defaults.color = '#8b99af'; Chart.defaults.borderColor = '#2a354d';
-            mainChart = new Chart(document.getElementById('mainChart').getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: globalDatesDisplay,
-                    datasets: [
-                        { label: 'Valor de la Cartera (USDC)', data: portfolioHistory, borderColor: '#26a69a', backgroundColor: 'rgba(38, 166, 154, 0.1)', fill: true, tension: 0.2, pointRadius: 0, borderWidth: 2 },
-                        { label: 'Capital Invertido (USDC)', data: investedHistory, borderColor: '#8b99af', borderDash: [5, 5], tension: 0, pointRadius: 0, fill: false, borderWidth: 2 }
-                    ]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'top', labels: { color: '#fff' } } },
-                    scales: { 
-                        x: { grid: { color: '#2a354d' }, ticks: { maxTicksLimit: 10 } }, 
-                        y: { grid: { color: '#2a354d' } } 
-                    }
-                }
-            });
+            // La evolución muestra únicamente el intervalo histórico configurado.
+            const chartStartIndex = strategyStarted ? firstEligibleIndex : Math.max(0, simulationEndIndex);
+            const chartLabels = globalDatesDisplay.slice(chartStartIndex, simulationEndIndex + 1);
+            const chartPortfolio = portfolioHistory.slice(chartStartIndex);
+            const chartDcaOnly = dcaOnlyHistory.slice(chartStartIndex);
+            const chartInvested = investedHistory.slice(chartStartIndex);
+            const periodStart = chartLabels[0] || formatIsoDateEs(startDate);
+            const periodEnd = chartLabels[chartLabels.length - 1] || periodStart;
+            const executionProgress = useExecutions ? ` · ${executions}/${maxExecutions} ejecuciones` : ` · ${executions} ejecuciones`;
+            document.getElementById('portfolio-period').innerText = `${periodStart} — ${periodEnd}${executionProgress}`;
+            renderPortfolioChart(chartLabels, chartPortfolio, chartDcaOnly, chartInvested);
 
             // Tabla Ejecuciones
             const tbody = document.getElementById('executions-tbody');
-            tbody.innerHTML = ''; 
-            
-            let reversedOrders = [...ordersHistory].reverse();
-            
-            if(reversedOrders.length === 0) {
+            tbody.innerHTML = '';
+
+            const reversedOrders = [...ordersHistory].reverse();
+
+            if (reversedOrders.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:30px; color:#8b99af;">No hay ejecuciones registradas.</td></tr>';
             } else {
                 reversedOrders.forEach(order => {
-                    let tr = document.createElement('tr');
+                    const tr = document.createElement('tr');
+                    const earnBadge = order.earnTransfer > 0 ? '<span class="badge-earn">Enviado a Earn</span>' : '';
+                    const earnTransfer = order.earnTransfer > 0
+                        ? `<span class="exec-earn">↳ ${order.earnTransfer.toFixed(8)} BTC transferidos${order.finalEarnTransfer ? ' al detener el DCA' : ''}</span>`
+                        : '';
                     tr.innerHTML = `
-                        <td><span class="badge-status badge-completed">${order.status}</span></td>
+                        <td><span class="badge-status badge-completed">${order.status}</span>${earnBadge}</td>
                         <td><span class="exec-date">${order.date}</span><span class="exec-time">${order.time}</span></td>
                         <td class="exec-price">${formatNumberEs(order.price, 2)} USDC</td>
-                        <td><span class="exec-amount-btc">${order.btc.toFixed(8)} BTC</span><span class="exec-amount-fiat">${formatNumberEs(order.usdc, 2)} USDC</span></td>
+                        <td><span class="exec-amount-btc">${order.btc.toFixed(8)} BTC</span><span class="exec-amount-fiat">${formatNumberEs(order.usdc, 2)} USDC</span>${earnTransfer}</td>
                     `;
                     tbody.appendChild(tr);
                 });
             }
         }
 
-        window.onload = function() {
-            document.getElementById('input-daily').addEventListener('input', updateSummaryText);
-            document.getElementById('input-budget').addEventListener('input', updateSummaryText);
-            document.getElementById('input-target').addEventListener('input', updateSummaryText);
-            document.getElementById('input-executions').addEventListener('input', updateSummaryText);
-            toggleInputs();
-            fetchRealMarketData(); // Arrancamos conectando la API
-        }
+        window.addEventListener('DOMContentLoaded', () => {
+            const today = todayIsoUtc();
+            document.getElementById('input-start-date').max = today;
+            document.getElementById('input-end-date').max = today;
+
+            loadBots();
+            applyBotToForm(getActiveBot());
+            setConfigurationMode(false);
+            renderBotsList();
+
+            ['input-daily', 'input-budget', 'input-target', 'input-executions', 'input-apy', 'input-earn-frequency']
+                .forEach(id => document.getElementById(id).addEventListener('input', updateSummaryText));
+            document.getElementById('input-start-date').addEventListener('input', () => syncSimulationDateBounds('start'));
+            document.getElementById('input-end-date').addEventListener('input', () => syncSimulationDateBounds('end'));
+            document.getElementById('create-bot-button').addEventListener('click', beginCreateBot);
+            document.getElementById('save-bot-changes').addEventListener('click', saveActiveBot);
+            document.getElementById('cancel-bot-changes').addEventListener('click', resetActiveBotForm);
+            document.addEventListener('keydown', event => {
+                if (event.key !== 'Escape') return;
+                if (document.querySelector('.chart-box.is-pseudo-fullscreen')) closePseudoFullscreen();
+                else if (draftBot) resetActiveBotForm();
+            });
+            window.addEventListener('resize', scheduleChartsResize);
+            setupZoomControls();
+            setupFullscreenControls();
+            setupSellCalculator();
+            fetchRealMarketData();
+        });
     </script>
 </body>
 </html>
