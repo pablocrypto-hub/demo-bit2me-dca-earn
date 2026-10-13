@@ -21,6 +21,7 @@
         .fa-triangle-exclamation::before { content: '⚠'; }
         .fa-circle-pause::before { content: '⏸'; }
         .fa-arrow-right-arrow-left::before { content: '⇄'; }
+        .fa-arrow-right::before { content: '→'; }
         .fa-spin { animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         
@@ -124,6 +125,7 @@
         .api-badge { font-size:12px; padding:4px 8px; border-radius:4px; border: 1px solid #2a354d; color:#fff; background:#192033; }
         .api-badge.offline { background-color: rgba(247, 168, 89, 0.1); color: #f7a859; border-color: #f7a859; font-weight: bold; }
         .api-badge.online { background-color: rgba(0, 214, 118, 0.1); color: #00d676; border-color: #00d676; font-weight: bold; }
+        .api-badge.integrated { background-color: rgba(84, 191, 255, 0.1); color: #72c8ff; border-color: #3b98d0; font-weight: bold; }
         
         .stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; margin-bottom: 30px; flex-shrink: 0; }
         .stat-card { background-color: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; text-align: center; }
@@ -178,6 +180,46 @@
         .sell-order-number { color: #ff777c; font-weight: 700; }
         .sell-price { color: #fff; font-weight: 700; }
         .sell-quantity { color: #8ac4ff; }
+
+        /* SIMULADOR DE RECOMPRA FRENTE A HODL */
+        .rebuy-simulator { margin-bottom: 30px; padding: 20px; border: 1px solid rgba(247, 168, 89, .42); border-radius: 12px; background: linear-gradient(145deg, #111a2d, rgba(247, 168, 89, .055)); flex-shrink: 0; }
+        .rebuy-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+        .rebuy-header h3 { margin: 0 0 6px; color: #fff; font-size: 18px; }
+        .rebuy-header p { max-width: 790px; margin: 0; color: #8b99af; font-size: 12px; line-height: 1.5; }
+        .rebuy-mode-badge { min-width: 104px; padding: 9px 15px; border: 1px solid rgba(247, 168, 89, .55); border-radius: 999px; background: rgba(247, 168, 89, .1); color: #ffb45e; font-size: 13px; font-weight: 700; text-align: center; }
+        .rebuy-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 8px; margin-bottom: 18px; }
+        .rebuy-flow-step { min-height: 62px; display: flex; flex-direction: column; justify-content: center; padding: 10px 12px; border: 1px solid #2a354d; border-radius: 8px; background: #10182a; }
+        .rebuy-flow-step span { color: #78879f; font-size: 10px; }
+        .rebuy-flow-step strong { margin-top: 5px; color: #fff; font-size: 13px; font-variant-numeric: tabular-nums; }
+        .rebuy-flow-step:last-child { border-color: rgba(0, 214, 118, .38); }
+        .rebuy-flow-step:last-child strong { color: #38d99b; }
+        .rebuy-flow-arrow { color: #f7a859; font-size: 15px; }
+        .rebuy-input-grid { display: grid; grid-template-columns: repeat(2, minmax(190px, 1fr)); gap: 12px; margin-bottom: 10px; }
+        .rebuy-quick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 16px; color: #78879f; font-size: 11px; }
+        .rebuy-quick-row button { padding: 5px 9px; border: 1px solid #34415a; border-radius: 6px; background: #192033; color: #b7c2d5; font-size: 11px; cursor: pointer; }
+        .rebuy-quick-row button:hover { border-color: #f7a859; color: #fff; }
+        .rebuy-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 17px; }
+        .rebuy-card { padding: 12px; border: 1px solid #2a354d; border-radius: 8px; background: #10182a; }
+        .rebuy-card span { display: block; margin-bottom: 5px; color: #78879f; font-size: 10px; }
+        .rebuy-card strong { color: #fff; font-size: 14px; font-variant-numeric: tabular-nums; }
+        .rebuy-card small { display: block; margin-top: 5px; color: #8b99af; font-size: 10px; line-height: 1.35; }
+        .rebuy-card.positive { border-color: rgba(0, 214, 118, .4); background: rgba(0, 214, 118, .055); }
+        .rebuy-card.positive strong { color: #38d99b; }
+        .rebuy-card.negative { border-color: rgba(239, 83, 80, .42); background: rgba(239, 83, 80, .055); }
+        .rebuy-card.negative strong { color: #ff777c; }
+        .rebuy-comparison { padding: 15px; border: 1px solid #2a354d; border-radius: 9px; background: #0f1729; }
+        .rebuy-comparison-row { display: grid; grid-template-columns: 150px 1fr 145px; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .rebuy-comparison-row:last-of-type { margin-bottom: 0; }
+        .rebuy-comparison-label { color: #b7c2d5; font-size: 12px; }
+        .rebuy-bar-track { height: 10px; overflow: hidden; border-radius: 999px; background: #263047; }
+        .rebuy-bar { width: 0; height: 100%; border-radius: inherit; transition: width .35s ease; }
+        .rebuy-bar.hodl { background: #5aa9ff; }
+        .rebuy-bar.strategy { background: linear-gradient(90deg, #f7a859, #38d99b); }
+        .rebuy-comparison-value { color: #fff; font-size: 12px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+        .rebuy-insight { margin-top: 14px; padding: 11px 12px; border-radius: 8px; background: #192033; color: #aab6ca; font-size: 12px; line-height: 1.5; }
+        .rebuy-insight.positive { border: 1px solid rgba(0, 214, 118, .35); color: #70e3b3; background: rgba(0, 214, 118, .055); }
+        .rebuy-insight.negative { border: 1px solid rgba(239, 83, 80, .38); color: #ff9296; background: rgba(239, 83, 80, .055); }
+        .rebuy-disclaimer { margin: 10px 0 0; color: #65738a; font-size: 10px; line-height: 1.45; }
         
         /* EJECUCIONES SECTION */
         .executions-section { flex: 0 0 auto; display: flex; flex-direction: column; margin-bottom: 30px; }
@@ -258,14 +300,20 @@
         @media (max-width: 1250px) {
             .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .sell-input-grid, .sell-result-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .rebuy-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 850px) {
             .chart-interaction-hint { display: none; }
-            .sell-input-grid, .sell-result-summary { grid-template-columns: 1fr; }
-            .sell-calculator-header { align-items: stretch; flex-direction: column; }
+            .sell-input-grid, .sell-result-summary, .rebuy-input-grid, .rebuy-summary { grid-template-columns: 1fr; }
+            .sell-calculator-header, .rebuy-header { align-items: stretch; flex-direction: column; }
             .sell-mode-badge { align-self: flex-start; }
+            .rebuy-mode-badge { align-self: flex-start; }
             .sell-calculator-actions { align-items: stretch; flex-direction: column; }
             .sell-calculate-button { width: 100%; }
+            .rebuy-flow { grid-template-columns: 1fr; }
+            .rebuy-flow-arrow { transform: rotate(90deg); text-align: center; }
+            .rebuy-comparison-row { grid-template-columns: 1fr; gap: 6px; }
+            .rebuy-comparison-value { text-align: left; }
         }
         @media (prefers-reduced-motion: reduce) {
             .bot-pmc-line.active { animation: none; opacity: 1; }
@@ -436,6 +484,64 @@
                 </table>
             </div>
         </section>
+
+        <section class="rebuy-simulator" aria-labelledby="rebuy-simulator-title">
+            <div class="rebuy-header">
+                <div>
+                    <h3 id="rebuy-simulator-title">Recompra de BTC: venta promediada frente a HODL</h3>
+                    <p>Compara el BTC que conservarías sin vender con el BTC que podrías recomprar usando el fiat acumulado por la venta escalonada. El cálculo toma automáticamente los resultados de la calculadora anterior y se actualiza para el bot activo.</p>
+                </div>
+                <span class="rebuy-mode-badge">Recomprar</span>
+            </div>
+
+            <div class="rebuy-flow" aria-label="Flujo de venta y recompra">
+                <div class="rebuy-flow-step"><span>BTC vendido</span><strong id="rebuy-flow-btc">—</strong></div>
+                <i class="fa-solid fa-arrow-right rebuy-flow-arrow" aria-hidden="true"></i>
+                <div class="rebuy-flow-step"><span>Fiat neto acumulado</span><strong id="rebuy-flow-fiat">—</strong></div>
+                <i class="fa-solid fa-arrow-right rebuy-flow-arrow" aria-hidden="true"></i>
+                <div class="rebuy-flow-step"><span>BTC recomprado</span><strong id="rebuy-flow-result">—</strong></div>
+            </div>
+
+            <div class="rebuy-input-grid">
+                <div class="sell-field">
+                    <label for="rebuy-price">Precio estimado de recompra</label>
+                    <div class="sell-input-shell"><input id="rebuy-price" type="number" min="0.01" step="100" value="85000"><span class="sell-unit">USDC</span></div>
+                </div>
+                <div class="sell-field">
+                    <label for="rebuy-costs">Costes totales estimados de venta y recompra</label>
+                    <div class="sell-input-shell"><input id="rebuy-costs" type="number" min="0" max="25" step="0.01" value="0"><span class="sell-unit">%</span></div>
+                </div>
+            </div>
+            <div class="rebuy-quick-row">
+                <span>Fijar recompra por debajo del promedio de venta:</span>
+                <button type="button" data-rebuy-drop="5">−5%</button>
+                <button type="button" data-rebuy-drop="10">−10%</button>
+                <button type="button" data-rebuy-drop="15">−15%</button>
+                <button type="button" data-rebuy-drop="20">−20%</button>
+            </div>
+
+            <div class="rebuy-summary" aria-live="polite">
+                <div class="rebuy-card"><span>Referencia HODL</span><strong id="rebuy-hodl-btc">—</strong><small>El mismo BTC que se ha simulado vender</small></div>
+                <div class="rebuy-card"><span>Fiat disponible para recomprar</span><strong id="rebuy-net-fiat">—</strong><small id="rebuy-gross-fiat">—</small></div>
+                <div class="rebuy-card"><span>Saldo tras la recompra</span><strong id="rebuy-result-btc">—</strong><small id="rebuy-price-gap">—</small></div>
+                <div class="rebuy-card" id="rebuy-extra-card"><span>BTC adicional frente a HODL</span><strong id="rebuy-extra-btc">—</strong><small id="rebuy-extra-percent">—</small></div>
+            </div>
+
+            <div class="rebuy-comparison">
+                <div class="rebuy-comparison-row">
+                    <span class="rebuy-comparison-label">HODL del BTC vendido</span>
+                    <div class="rebuy-bar-track"><div class="rebuy-bar hodl" id="rebuy-hodl-bar"></div></div>
+                    <strong class="rebuy-comparison-value" id="rebuy-hodl-bar-value">—</strong>
+                </div>
+                <div class="rebuy-comparison-row">
+                    <span class="rebuy-comparison-label">Venta + recompra</span>
+                    <div class="rebuy-bar-track"><div class="rebuy-bar strategy" id="rebuy-strategy-bar"></div></div>
+                    <strong class="rebuy-comparison-value" id="rebuy-strategy-bar-value">—</strong>
+                </div>
+                <div class="rebuy-insight" id="rebuy-insight">Calcula primero la venta escalonada para comparar ambas estrategias.</div>
+            </div>
+            <p class="rebuy-disclaimer">Simulación orientativa: no incluye impuestos, deslizamiento ni cambios en las condiciones de mercado. Los costes indicados se descuentan del ingreso bruto de la venta. El HODL de referencia solo comprende la cantidad de BTC incluida en la venta simulada.</p>
+        </section>
     </div>
 
     <div class="right-panel" id="configuration-panel">
@@ -529,6 +635,7 @@
         const MARKET_START_DATE = '2026-01-01';
         const MARKET_START_MS = Date.UTC(2026, 0, 1);
         const BOTS_STORAGE_KEY = 'bit2me-dca-earn-bots-v3';
+        const REBUY_SETTINGS_STORAGE_KEY = 'bit2me-rebuy-settings-v1';
         const MARKET_CACHE_KEY = 'bit2me-btcusdc-real-candles-v1';
         const BIT2ME_CANDLES_BASE = 'https://gateway.bit2me.com/v1/trading/candle';
         const BINANCE_REST_BASES = [
@@ -541,6 +648,12 @@
             ...BINANCE_REST_BASES.map((restBase, index) => ({ id: `binance-${index + 1}`, label: 'Binance', type: 'binance', restBase }))
         ];
         const BINANCE_STREAM_URL = 'wss://stream.binance.com:9443/ws/btcusdc@kline_1d';
+        // Histórico real BTC/USDC incluido dentro del HTML para que el gráfico
+        // funcione incluso cuando ChatGPT, un visor local o el navegador bloqueen
+        // las solicitudes externas. Fuente: archivo público oficial de Binance.
+        // Formato compacto: [segundos UTC, apertura, máximo, mínimo, cierre].
+        const EMBEDDED_MARKET_LAST_DATE = '2026-10-04';
+        const EMBEDDED_REAL_CANDLES = [[1767225600,87536.02,88823.99,87420.01,88751.00],[1767312000,88751.00,90943.14,88284.95,89971.00],[1767398400,89972.00,90713.99,89300.00,90610.00],[1767484800,90610.00,91790.70,90609.99,91515.00],[1767571200,91515.01,94800.00,91500.00,93888.01],[1767657600,93888.01,94444.92,91242.55,93729.00],[1767744000,93729.00,93731.00,90596.95,91295.01],[1767830400,91299.00,91621.09,89202.88,91043.00],[1767916800,91043.00,91959.99,89607.22,90543.24],[1768003200,90543.24,90740.00,90300.55,90413.60],[1768089600,90413.59,91179.84,90133.33,90907.01],[1768176000,90907.00,92427.86,90031.23,91209.00],[1768262400,91209.01,96600.00,90963.00,95381.00],[1768348800,95381.00,97965.00,94530.87,96969.59],[1768435200,96969.60,97220.60,95108.63,95598.00],[1768521600,95598.50,95848.19,94269.32,95535.01],[1768608000,95535.00,95641.01,95005.02,95131.28],[1768694400,95131.29,95527.02,93580.01,93653.84],[1768780800,93653.83,93653.83,91888.88,92582.00],[1768867200,92581.99,92825.65,87777.00,88338.14],[1768953600,88338.14,90503.84,87203.12,89392.01],[1769040000,89392.01,90297.81,88445.53,89485.99],[1769126400,89485.99,91146.84,88480.00,89507.10],[1769212800,89507.10,89835.24,89058.45,89112.01],[1769299200,89112.01,89207.00,86011.00,86590.02],[1769385600,86590.02,88802.99,86435.92,88275.96],[1769472000,88275.96,89449.44,87228.27,89153.01],[1769558400,89153.00,90506.10,88735.58,89197.13],[1769644800,89197.14,89247.28,83258.19,84538.55],[1769731200,84538.55,84619.14,81000.00,84149.61],[1769817600,84149.61,84172.00,75624.89,78669.39],[1769904000,78674.98,79363.62,75649.60,76910.30],[1769990400,76911.99,79316.82,74508.19,78689.20],[1770076800,78689.19,79136.29,72865.75,75682.00],[1770163200,75682.00,76900.57,71721.41,73028.12],[1770249600,73027.34,73198.93,62225.17,62810.94],[1770336000,62804.66,71714.89,59900.01,70537.69],[1770422400,70537.38,71663.00,67309.33,69261.15],[1770508800,69263.70,72239.87,68849.48,70298.38],[1770595200,70295.08,71405.06,68262.00,70108.69],[1770681600,70108.68,70510.15,67868.82,68809.21],[1770768000,68809.21,69259.84,65729.28,67035.99],[1770854400,67041.86,68381.76,65081.51,66219.96],[1770940800,66219.96,69445.62,65819.65,68810.37],[1771027200,68810.38,70540.15,68696.75,69790.99],[1771113600,69791.63,70956.57,68028.10,68797.11],[1771200000,68797.12,70100.00,67248.72,68865.31],[1771286400,68865.31,69224.46,66590.01,67480.90],[1771372800,67480.90,68450.39,65834.50,66434.02],[1771459200,66434.02,67299.99,65613.70,66974.57],[1771545600,66974.58,68299.15,66428.57,67991.19],[1771632000,67991.19,68680.54,67515.31,67961.00],[1771718400,67961.00,68232.24,67168.01,67616.63],[1771804800,67617.48,67660.37,63874.01,64636.01],[1771891200,64636.01,64992.54,62500.00,64061.21],[1771977600,64063.44,70023.80,63912.91,67994.10],[1772064000,67994.09,68860.80,66506.03,67485.22],[1772150400,67486.24,68222.50,64919.55,65867.01],[1772236800,65867.01,67759.99,63024.75,66979.22],[1772323200,66977.23,68250.00,65050.01,65774.94],[1772409600,65778.16,70134.57,65255.15,68830.65],[1772496000,68831.99,69254.99,66147.66,68341.31],[1772582400,68341.32,74086.95,67402.20,72686.18],[1772668800,72686.18,73584.71,70653.34,70887.07],[1772755200,70887.08,71424.83,67737.88,68114.01],[1772841600,68114.00,68545.21,66925.00,67259.16],[1772928000,67259.16,68196.72,65612.89,65966.00],[1773014400,65966.00,69541.04,65822.36,68438.71],[1773100800,68438.70,71798.84,68393.60,69958.00],[1773187200,69958.00,71341.03,68979.16,70205.00],[1773273600,70205.00,70818.22,69216.66,70528.80],[1773360000,70528.00,73972.00,70393.01,70945.17],[1773446400,70945.16,71316.58,70330.47,71229.78],[1773532800,71229.77,73224.86,70877.00,72828.94],[1773619200,72828.94,74924.00,72285.81,74886.98],[1773705600,74886.97,76020.02,73401.37,73935.89],[1773792000,73935.89,74699.99,70414.01,71254.28],[1773878400,71254.27,71622.99,68795.45,69924.01],[1773964800,69924.01,71366.85,69381.40,70503.80],[1774051200,70501.53,71093.62,68554.38,68912.83],[1774137600,68912.83,69581.82,67347.05,67856.40],[1774224000,67853.36,71798.42,67438.56,70885.59],[1774310400,70885.59,71396.01,68891.26,70541.95],[1774396800,70536.78,72020.81,70391.69,71316.48],[1774483200,71319.33,71422.49,68124.01,68788.81],[1774569600,68788.81,69142.84,65505.00,66370.62],[1774656000,66370.62,67258.06,65897.88,66343.01],[1774742400,66342.86,67089.72,64948.55,65974.55],[1774828800,65977.66,68152.47,65760.40,66761.95],[1774915200,66761.96,68559.40,65950.00,68240.16],[1775001600,68242.71,69297.69,67548.63,68114.28],[1775088000,68116.80,68654.16,65705.71,66902.51],[1775174400,66902.52,67383.33,66283.79,66961.19],[1775260800,66961.19,67552.11,66776.25,67295.81],[1775347200,67295.80,69128.51,66601.87,69019.18],[1775433600,69020.28,70359.58,68313.06,68858.92],[1775520000,68856.01,72765.80,67725.99,71925.45],[1775606400,71922.61,72859.99,70698.51,71083.75],[1775692800,71083.75,73150.00,70476.62,71803.45],[1775779200,71803.44,73482.41,71437.43,72995.40],[1775865600,72995.77,73836.68,72558.34,73086.30],[1775952000,73086.30,73171.92,70519.76,70756.89],[1776038400,70756.88,74942.00,70590.34,74460.73],[1776124800,74460.72,76105.62,73855.05,74188.89],[1776211200,74186.10,75458.63,73533.73,74842.60],[1776297600,74842.59,75569.86,73322.00,75185.55],[1776384000,75185.56,78378.19,74557.50,77103.95],[1776470400,77103.96,77455.73,75477.53,75735.01],[1776556800,75735.01,76284.39,73803.00,73839.64],[1776643200,73841.70,76609.75,73753.60,75878.13],[1776729600,75876.93,76935.47,74847.36,76363.70],[1776816000,76363.71,79515.00,76164.95,78220.81],[1776902400,78220.81,78698.63,77000.00,78288.19],[1776988800,78288.20,78613.22,77295.23,77473.20],[1777075200,77473.20,77917.89,77176.00,77655.49],[1777161600,77655.49,78966.20,77353.55,78675.86],[1777248000,78677.04,79505.79,76466.28,77373.13],[1777334400,77373.13,77485.01,75666.00,76334.90],[1777420800,76334.91,77913.14,74922.58,75766.47],[1777507200,75766.47,76660.00,75299.45,76336.19],[1777593600,76336.18,78930.57,76305.10,78235.86],[1777680000,78235.86,79180.39,78038.72,78688.20],[1777766400,78688.21,79441.78,78078.60,78569.59],[1777852800,78569.60,80774.00,78201.38,79861.74],[1777939200,79861.74,81800.00,79801.66,80904.11],[1778025600,80904.10,82846.15,80723.20,81443.21],[1778112000,81443.20,81714.80,79498.00,80009.67],[1778198400,80009.67,80518.51,79190.00,80202.62],[1778284800,80202.62,81074.38,80134.95,80669.68],[1778371200,80669.69,82486.87,80279.44,82216.68],[1778457600,82216.68,82388.28,80444.34,81736.23],[1778544000,81736.24,81795.64,79837.35,80504.02],[1778630400,80504.02,81315.25,78733.31,79304.19],[1778716800,79304.19,82058.82,78899.79,81091.64],[1778803200,81091.64,81664.83,78629.68,79090.12],[1778889600,79090.13,79203.53,77627.41,78132.72],[1778976000,78124.73,78583.32,76700.90,77431.98],[1779062400,77431.98,77776.71,76014.03,76965.65],[1779148800,76965.65,77376.47,76097.30,76785.01],[1779235200,76785.01,77816.01,76467.23,77503.51],[1779321600,77503.51,78150.00,76670.73,77567.32],[1779408000,77567.33,77846.29,75285.23,75478.21],[1779494400,75478.20,77350.71,74212.56,76676.41],[1779580800,76676.40,77444.00,76026.74,77006.10],[1779667200,77006.10,77854.15,76843.20,77269.15],[1779753600,77269.16,78020.08,75589.60,75848.94],[1779840000,75851.40,76083.33,74157.18,74357.69],[1779926400,74357.68,74500.47,72460.41,73546.72],[1780012800,73546.72,74256.48,72431.30,73403.38],[1780099200,73403.39,74066.91,73145.64,73808.54],[1780185600,73808.54,74194.48,73322.58,73606.41],[1780272000,73606.41,74017.19,70600.01,71341.21],[1780358400,71341.21,71349.54,66124.00,66688.08],[1780444800,66688.08,67449.65,64021.34,64078.30],[1780531200,64078.29,64723.59,61342.35,63835.59],[1780617600,63835.58,63930.23,59108.62,61060.60],[1780704000,61060.60,61524.38,59490.69,60875.73],[1780790400,60875.08,64211.86,60733.33,63321.73],[1780876800,63329.31,64200.50,62393.77,63086.83],[1780963200,63086.82,63508.56,60745.05,61705.68],[1781049600,61705.69,62830.00,60695.87,61469.54],[1781136000,61465.51,63880.00,61465.51,63584.18],[1781222400,63584.18,64360.00,62779.96,63559.26],[1781308800,63559.26,64750.00,63386.81,64439.99],[1781395200,64439.99,65781.76,63660.61,65726.10],[1781481600,65724.31,67269.42,65333.65,66296.31],[1781568000,66296.30,66969.95,65322.64,65633.15],[1781654400,65633.79,66402.79,63874.09,64463.11],[1781740800,64466.35,64769.65,62203.36,62898.35],[1781827200,62898.35,63617.68,62266.82,63495.51],[1781913600,63495.50,64344.07,63143.69,64236.79],[1782000000,64236.79,64526.54,63208.97,63251.69],[1782086400,63255.42,65571.99,63255.42,63970.84],[1782172800,63970.83,64222.77,61881.33,62669.11],[1782259200,62669.11,63166.65,59045.35,60997.86],[1782345600,60997.86,61887.00,58039.82,59725.52],[1782432000,59728.80,60711.68,58267.81,60032.48],[1782518400,60035.26,60865.07,59785.71,59955.92],[1782604800,59955.92,60481.05,58827.95,59507.24],[1782691200,59507.25,60719.99,58820.92,60191.79],[1782777600,60191.78,60213.32,58120.46,58560.30],[1782864000,58560.30,61299.24,57744.87,59976.04],[1782950400,59979.20,62153.09,59541.01,61506.89],[1783036800,61506.89,62917.80,61187.28,62533.25],[1783123200,62533.26,63423.24,62286.76,63102.01],[1783209600,63102.01,64166.30,62400.00,63606.21],[1783296000,63606.21,64671.12,61265.56,64016.82],[1783382400,64019.28,64287.96,62620.49,63331.22],[1783468800,63331.22,63729.43,61500.00,62248.01],[1783555200,62248.01,63466.50,61659.20,63189.48],[1783641600,63189.49,64666.66,62885.28,64134.45],[1783728000,64134.45,64474.40,63787.16,63787.16],[1783814400,63787.16,64280.94,63607.80,63756.18],[1783900800,63756.18,64404.22,61776.81,62274.98],[1783987200,62274.98,65080.30,62207.45,65003.84],[1784073600,65009.32,65555.73,64450.00,64720.66],[1784160000,64720.66,64954.22,63709.14,63792.48],[1784246400,63789.01,64352.94,62485.25,63902.43],[1784332800,63902.42,64840.84,63853.51,64801.92],[1784419200,64801.91,64936.00,64248.86,64687.51],[1784505600,64687.51,65760.72,63717.94,65219.52],[1784592000,65219.04,67000.00,65000.00,66514.20],[1784678400,66515.94,66697.74,65506.00,66079.36],[1784764800,66079.36,66280.45,64597.09,65058.35],[1784851200,65058.36,65773.22,63668.52,64092.48],[1784937600,64092.49,64391.32,63750.12,64317.13],[1785024000,64317.14,65524.26,64239.09,65350.05],[1785110400,65350.05,65687.92,63550.85,63703.86],[1785196800,63703.87,64056.52,62679.43,63863.06],[1785283200,63860.08,64678.84,63203.28,63921.05],[1785369600,63919.37,65117.09,63535.86,64740.60],[1785456000,64740.61,65368.55,62400.00,62839.63],[1785542400,62839.64,63101.62,62230.47,62774.11],[1785628800,62774.11,63745.45,62758.71,63519.12],[1785715200,63519.13,64035.96,62225.83,63474.90],[1785801600,63477.43,64499.68,63270.58,64065.29],[1785888000,64065.30,64976.32,63832.46,64606.40],[1785974400,64606.40,64937.41,64108.87,64276.66],[1786060800,64276.65,65345.81,64115.70,64890.00],[1786147200,64890.00,65151.99,64795.62,64908.00],[1786233600,64908.00,65446.00,64688.06,64859.87],[1786320000,64859.87,65350.00,63759.08,63922.49],[1786406400,63922.50,64447.04,63183.02,63545.42],[1786492800,63544.91,64437.09,63249.37,63420.92],[1786579200,63420.91,63954.00,62792.04,63434.68],[1786665600,63434.69,63569.39,62480.00,62988.87],[1786752000,62988.87,63130.00,62860.00,63028.16],[1786838400,63028.16,63336.07,62656.26,62840.00],[1786924800,62841.00,64577.96,62693.91,64486.01],[1787011200,64486.01,65001.68,63975.02,64687.76],[1787097600,64687.77,70000.00,64119.00,69300.84],[1787184000,69300.83,73401.57,68854.13,73007.44],[1787270400,73019.54,79491.73,73010.71,78334.74],[1787356800,78334.74,78814.55,76488.00,77063.69],[1787443200,77063.69,78055.55,75541.45,77724.41],[1787529600,77730.12,80000.00,76667.42,78981.46],[1787616000,78981.46,81273.15,77841.66,78528.87],[1787702400,78534.72,79250.00,77622.31,79027.14],[1787788800,79027.14,80859.99,78557.58,80269.14],[1787875200,80269.75,81494.43,76873.94,77842.57],[1787961600,77842.57,78335.81,77388.00,78232.84],[1788048000,78232.83,79399.44,76992.79,77682.54],[1788134400,77672.76,79238.77,77379.34,78572.39],[1788220800,78572.38,79200.00,76400.00,77402.82],[1788307200,77402.83,77761.50,76235.41,77315.49],[1788393600,77308.98,82300.00,76946.09,81268.77],[1788480000,81268.45,81442.27,78650.11,79690.88],[1788566400,79690.88,80218.38,79462.87,79849.28],[1788652800,79849.28,80565.56,79233.87,80346.60],[1788739200,80354.55,80453.51,78680.01,79104.49],[1788825600,79104.48,79479.64,77609.23,78452.98],[1788912000,78452.99,79761.15,77750.00,78288.30],[1788998400,78288.31,78551.45,76438.80,76558.36],[1789084800,76558.35,79870.00,76024.72,77220.35],[1789171200,77220.36,77496.76,77052.36,77272.23],[1789257600,77272.23,77434.65,76478.50,76813.91],[1789344000,76813.67,79605.88,76372.00,78189.80],[1789430400,78189.30,78252.16,74908.16,75600.39],[1789516800,75600.40,76515.00,75002.00,76155.29],[1789603200,76155.30,77108.18,75956.71,76367.28],[1789689600,76359.80,81387.37,76239.91,80888.39],[1789776000,80888.39,81941.63,80835.13,81245.47],[1789862400,81245.48,81479.55,80106.99,81177.15],[1789948800,81178.31,87397.14,80841.54,86601.08],[1790035200,86602.39,86717.86,85102.10,86203.21],[1790121600,86203.20,87279.86,83500.21,84378.40],[1790208000,84378.40,84924.38,82857.14,84386.06],[1790294400,84386.05,85257.47,83166.62,84099.59],[1790380800,84099.59,84472.00,83785.00,84433.61],[1790467200,84433.60,85150.00,84112.80,84452.27],[1790553600,84463.51,84989.75,82524.87,83461.30],[1790640000,83461.30,84542.18,82738.29,83629.54],[1790726400,83629.54,85618.00,82916.00,83567.21],[1790812800,83567.21,85237.99,83132.53,84850.09],[1790899200,84850.09,87500.00,83862.51,84505.86],[1790985600,84505.87,85024.00,84436.81,84745.59],[1791072000,84745.60,86794.00,84710.24,86519.00]];
 
         let mainChart;
         let tvChartInstance;
@@ -573,6 +686,8 @@
         let lastSimulationTotalBtc = 0;
         let lastSimulationInvestedFiat = 0;
         let sellCalculatorContextKey = null;
+        let lastSellCalculation = null;
+        let rebuySettingsByBot = {};
         const botRuntime = {};
 
         let globalDates = [];
@@ -993,7 +1108,9 @@
         function setApiStatus(message, state = '') {
             const status = document.getElementById('api-status');
             if (!status) return;
-            const icon = state === 'online' ? 'fa-circle-nodes' : (state === 'offline' ? 'fa-triangle-exclamation' : 'fa-spinner fa-spin');
+            const icon = state === 'online' || state === 'integrated'
+                ? 'fa-circle-nodes'
+                : (state === 'offline' ? 'fa-triangle-exclamation' : 'fa-spinner fa-spin');
             status.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`;
             status.className = `api-badge${state ? ` ${state}` : ''}`;
         }
@@ -1046,6 +1163,24 @@
                 throw new Error('El histórico real no comienza en enero de 2026');
             }
             return validated;
+        }
+
+        function loadEmbeddedMarketHistory() {
+            const today = new Date();
+            const todayStartSeconds = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) / 1000;
+            return validateRealCandles(EMBEDDED_REAL_CANDLES.map(row => ({
+                time: Number(row?.[0]),
+                open: Number(row?.[1]),
+                high: Number(row?.[2]),
+                low: Number(row?.[3]),
+                close: Number(row?.[4]),
+                closed: Number(row?.[0]) < todayStartSeconds
+            })));
+        }
+
+        function mergeMarketHistories(...histories) {
+            const candles = histories.flatMap(history => Array.isArray(history) ? history : []);
+            return validateRealCandles(candles);
         }
 
         async function fetchBit2MeHistoricalCandles(signal, startTime = MARKET_START_MS, endTime = Date.now(), limit = 1000) {
@@ -1271,7 +1406,7 @@
             } catch (error) {
                 console.warn('No se pudo hacer la actualización REST de respaldo.', error);
                 if (globalCandles.length) {
-                    setApiStatus(`Sin conexión · histórico real guardado hasta ${getLastMarketDateText()}`, 'offline');
+                    setApiStatus(`Modo autónomo · histórico real hasta ${getLastMarketDateText()}`, 'integrated');
                 }
             } finally {
                 window.clearTimeout(timeout);
@@ -1283,14 +1418,26 @@
             marketPollTimer = window.setInterval(refreshLatestCandle, 60 * 1000);
         }
 
-        // El dashboard solo muestra velas reales. Primero recupera el último histórico
-        // real guardado y después intenta actualizarlo desde Bit2Me Pro o Binance.
+        // El dashboard siempre arranca con un histórico real integrado. Después combina
+        // cualquier caché más reciente e intenta actualizar desde Bit2Me Pro o Binance.
+        // De esta forma los visores que bloquean CORS nunca dejan los gráficos vacíos.
         async function fetchRealMarketData() {
             const cached = loadRealMarketCache();
-            if (cached) {
-                activeMarketSource = cached.source;
-                loadCandles(cached.candles);
-                setApiStatus(`Histórico real guardado · hasta ${getLastMarketDateText(cached.candles)}`, 'offline');
+            let embeddedCandles = [];
+            try {
+                embeddedCandles = loadEmbeddedMarketHistory();
+            } catch (error) {
+                console.warn('El histórico integrado no se pudo validar.', error);
+            }
+
+            const baselineCandles = cached
+                ? mergeMarketHistories(embeddedCandles, cached.candles)
+                : embeddedCandles;
+            if (baselineCandles.length) {
+                activeMarketSource = cached?.source || MARKET_SOURCE_DEFINITIONS.find(source => source.type === 'binance');
+                loadCandles(baselineCandles);
+                const baselineLabel = cached ? 'Histórico local + integrado' : 'Histórico real integrado';
+                setApiStatus(`${baselineLabel} · hasta ${getLastMarketDateText(baselineCandles)} · actualizando…`, 'integrated');
                 refreshMarketViews();
             } else {
                 initTradingView();
@@ -1301,17 +1448,17 @@
             try {
                 const result = await fetchFirstRealMarketSource();
                 activeMarketSource = result.source;
-                loadCandles(result.candles);
-                persistRealMarketCache(result.candles, result.source);
-                setApiStatus(`Histórico real ${result.source.label} · hasta ${getLastMarketDateText(result.candles)}`, 'online');
+                const completeHistory = mergeMarketHistories(embeddedCandles, cached?.candles, result.candles);
+                loadCandles(completeHistory);
+                persistRealMarketCache(completeHistory, result.source);
+                setApiStatus(`Histórico real ${result.source.label} · hasta ${getLastMarketDateText(completeHistory)}`, 'online');
                 refreshMarketViews();
                 connectLiveMarketStream();
                 startMarketPolling();
             } catch (error) {
                 console.warn('No se pudo actualizar el histórico real.', error);
-                if (cached) {
-                    activeMarketSource = cached.source;
-                    setApiStatus(`Sin conexión · histórico real guardado hasta ${getLastMarketDateText(cached.candles)}`, 'offline');
+                if (baselineCandles.length) {
+                    setApiStatus(`Modo autónomo · ${baselineCandles.length} velas reales hasta ${getLastMarketDateText(baselineCandles)}`, 'integrated');
                     startMarketPolling();
                 } else {
                     activeMarketSource = null;
@@ -2090,6 +2237,134 @@
             return num.toLocaleString('es-ES', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
         }
 
+        function loadRebuySettings() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(REBUY_SETTINGS_STORAGE_KEY) || '{}');
+                rebuySettingsByBot = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+            } catch (error) {
+                rebuySettingsByBot = {};
+                console.warn('No se pudo leer la configuración guardada de recompra.', error);
+            }
+        }
+
+        function persistRebuySettings() {
+            try {
+                localStorage.setItem(REBUY_SETTINGS_STORAGE_KEY, JSON.stringify(rebuySettingsByBot));
+            } catch (error) {
+                console.warn('El navegador no permitió guardar la configuración de recompra.', error);
+            }
+        }
+
+        function saveCurrentRebuySettings() {
+            if (!sellCalculatorContextKey) return;
+            const price = Number(document.getElementById('rebuy-price').value);
+            const costs = Number(document.getElementById('rebuy-costs').value);
+            rebuySettingsByBot[sellCalculatorContextKey] = {
+                price: Number.isFinite(price) && price > 0 ? price : null,
+                costs: Number.isFinite(costs) && costs >= 0 ? costs : 0
+            };
+            persistRebuySettings();
+        }
+
+        function applyRebuySettings(contextKey, defaultPrice) {
+            const stored = rebuySettingsByBot[contextKey];
+            const storedPrice = Number(stored?.price);
+            const storedCosts = Number(stored?.costs);
+            document.getElementById('rebuy-price').value = Number.isFinite(storedPrice) && storedPrice > 0
+                ? String(storedPrice)
+                : String(Math.max(0.01, Math.round(defaultPrice * 100) / 100));
+            document.getElementById('rebuy-costs').value = Number.isFinite(storedCosts) && storedCosts >= 0 && storedCosts <= 25
+                ? String(storedCosts)
+                : '0';
+        }
+
+        function computeRebuyComparison(btcSold, grossFiat, averageSalePrice, rebuyPrice, costsPercent) {
+            const costAmount = grossFiat * (costsPercent / 100);
+            const netFiat = Math.max(0, grossFiat - costAmount);
+            const reboughtBtc = netFiat / rebuyPrice;
+            const extraBtc = reboughtBtc - btcSold;
+            const extraPercent = btcSold > 0 ? (extraBtc / btcSold) * 100 : 0;
+            const breakEvenPrice = btcSold > 0 ? netFiat / btcSold : 0;
+            const priceGapPercent = averageSalePrice > 0 ? ((averageSalePrice - rebuyPrice) / averageSalePrice) * 100 : 0;
+            return { costAmount, netFiat, reboughtBtc, extraBtc, extraPercent, breakEvenPrice, priceGapPercent };
+        }
+
+        function clearRebuyResults(message = 'Calcula primero la venta escalonada para comparar ambas estrategias.', isError = false) {
+            ['rebuy-flow-btc', 'rebuy-flow-fiat', 'rebuy-flow-result', 'rebuy-hodl-btc', 'rebuy-net-fiat',
+                'rebuy-result-btc', 'rebuy-extra-btc', 'rebuy-hodl-bar-value', 'rebuy-strategy-bar-value']
+                .forEach(id => { document.getElementById(id).textContent = '—'; });
+            document.getElementById('rebuy-gross-fiat').textContent = '—';
+            document.getElementById('rebuy-price-gap').textContent = '—';
+            document.getElementById('rebuy-extra-percent').textContent = '—';
+            document.getElementById('rebuy-hodl-bar').style.width = '0%';
+            document.getElementById('rebuy-strategy-bar').style.width = '0%';
+            document.getElementById('rebuy-extra-card').classList.remove('positive', 'negative');
+            const insight = document.getElementById('rebuy-insight');
+            insight.textContent = message;
+            insight.classList.remove('positive', 'negative');
+            if (isError) insight.classList.add('negative');
+        }
+
+        function calculateRebuySimulation() {
+            if (!lastSellCalculation) {
+                clearRebuyResults();
+                return null;
+            }
+
+            const rebuyPrice = Number(document.getElementById('rebuy-price').value);
+            const costsPercent = Number(document.getElementById('rebuy-costs').value);
+            if (!Number.isFinite(rebuyPrice) || rebuyPrice <= 0) {
+                clearRebuyResults('Introduce un precio de recompra superior a cero.', true);
+                return null;
+            }
+            if (!Number.isFinite(costsPercent) || costsPercent < 0 || costsPercent > 25) {
+                clearRebuyResults('Los costes estimados deben estar entre 0% y 25%.', true);
+                return null;
+            }
+
+            const { btcSold, grossFiat, weightedAverage } = lastSellCalculation;
+            const result = computeRebuyComparison(btcSold, grossFiat, weightedAverage, rebuyPrice, costsPercent);
+            const sign = result.extraBtc > 0 ? '+' : '';
+            const costText = `${formatNumberEs(result.costAmount, 2)} USDC en costes`;
+
+            document.getElementById('rebuy-flow-btc').textContent = `${btcSold.toFixed(8)} BTC`;
+            document.getElementById('rebuy-flow-fiat').textContent = `${formatNumberEs(result.netFiat, 2)} USDC`;
+            document.getElementById('rebuy-flow-result').textContent = `${result.reboughtBtc.toFixed(8)} BTC`;
+            document.getElementById('rebuy-hodl-btc').textContent = `${btcSold.toFixed(8)} BTC`;
+            document.getElementById('rebuy-net-fiat').textContent = `${formatNumberEs(result.netFiat, 2)} USDC`;
+            document.getElementById('rebuy-gross-fiat').textContent = `Bruto: ${formatNumberEs(grossFiat, 2)} USDC · ${costText}`;
+            document.getElementById('rebuy-result-btc').textContent = `${result.reboughtBtc.toFixed(8)} BTC`;
+            document.getElementById('rebuy-price-gap').textContent = result.priceGapPercent >= 0
+                ? `${formatNumberEs(result.priceGapPercent, 2)}% por debajo del promedio de venta`
+                : `${formatNumberEs(Math.abs(result.priceGapPercent), 2)}% por encima del promedio de venta`;
+            document.getElementById('rebuy-extra-btc').textContent = `${sign}${result.extraBtc.toFixed(8)} BTC`;
+            document.getElementById('rebuy-extra-percent').textContent = `${sign}${formatNumberEs(result.extraPercent, 4)}% de BTC frente a HODL`;
+            document.getElementById('rebuy-hodl-bar-value').textContent = `${btcSold.toFixed(8)} BTC`;
+            document.getElementById('rebuy-strategy-bar-value').textContent = `${result.reboughtBtc.toFixed(8)} BTC`;
+
+            const comparisonMaximum = Math.max(btcSold, result.reboughtBtc, 0.00000001);
+            document.getElementById('rebuy-hodl-bar').style.width = `${Math.max(1, (btcSold / comparisonMaximum) * 100)}%`;
+            document.getElementById('rebuy-strategy-bar').style.width = `${Math.max(1, (result.reboughtBtc / comparisonMaximum) * 100)}%`;
+
+            const extraCard = document.getElementById('rebuy-extra-card');
+            const insight = document.getElementById('rebuy-insight');
+            extraCard.classList.remove('positive', 'negative');
+            insight.classList.remove('positive', 'negative');
+            const tolerance = 0.000000005;
+            if (result.extraBtc > tolerance) {
+                extraCard.classList.add('positive');
+                insight.classList.add('positive');
+                insight.textContent = `La venta y recompra acumularía ${result.extraBtc.toFixed(8)} BTC más que mantener esa cantidad en HODL. Con los costes indicados, la recompra sigue aumentando BTC hasta un precio de equilibrio de ${formatNumberEs(result.breakEvenPrice, 2)} USDC.`;
+            } else if (result.extraBtc < -tolerance) {
+                extraCard.classList.add('negative');
+                insight.classList.add('negative');
+                insight.textContent = `A este precio, la recompra recuperaría ${Math.abs(result.extraBtc).toFixed(8)} BTC menos que el HODL. Para aumentar unidades, el precio de recompra debe ser inferior a ${formatNumberEs(result.breakEvenPrice, 2)} USDC con los costes indicados.`;
+            } else {
+                insight.textContent = `La recompra queda prácticamente igual que el HODL. El precio de equilibrio con los costes indicados es ${formatNumberEs(result.breakEvenPrice, 2)} USDC.`;
+            }
+            return result;
+        }
+
         function showSellCalculatorError(message = '') {
             const element = document.getElementById('sell-calculator-error');
             element.textContent = message;
@@ -2103,6 +2378,7 @@
             const spacingPercent = Number(document.getElementById('sell-order-spacing').value);
             const tbody = document.getElementById('sell-orders-body');
             const clearResults = () => {
+                lastSellCalculation = null;
                 document.getElementById('sell-result-average').textContent = '—';
                 document.getElementById('sell-result-btc').textContent = '—';
                 document.getElementById('sell-result-usdc').textContent = '—';
@@ -2112,6 +2388,7 @@
                 document.getElementById('sell-result-range').textContent = '—';
                 document.getElementById('sell-result-difference-card').classList.remove('positive', 'negative');
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#78879f;">Revisa los datos introducidos.</td></tr>';
+                calculateRebuySimulation();
             };
 
             let error = '';
@@ -2191,6 +2468,12 @@
                 document.getElementById('sell-result-difference-absolute').textContent = 'Sin base de inversión';
             }
             document.getElementById('sell-result-range').textContent = `${formatNumberEs(orders[0].price, 2)} — ${formatNumberEs(orders[orders.length - 1].price, 2)}`;
+            lastSellCalculation = {
+                btcSold: distributedBtc,
+                grossFiat: totalNotional,
+                weightedAverage: resultingAverage
+            };
+            calculateRebuySimulation();
             showSellCalculatorError('');
             return orders;
         }
@@ -2209,13 +2492,22 @@
                 if (referencePrice > 0) {
                     document.getElementById('sell-target-average').value = String(Math.ceil(referencePrice * 1.15 / 100) * 100);
                 }
+                const saleTarget = Number(document.getElementById('sell-target-average').value);
+                applyRebuySettings(contextKey, Number.isFinite(saleTarget) && saleTarget > 0 ? saleTarget * 0.85 : 85000);
             }
             calculateSellOrders();
         }
 
         function setupSellCalculator() {
+            loadRebuySettings();
             ['sell-target-average', 'sell-total-btc', 'sell-order-count', 'sell-order-spacing']
                 .forEach(id => document.getElementById(id).addEventListener('input', calculateSellOrders));
+            ['rebuy-price', 'rebuy-costs'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    saveCurrentRebuySettings();
+                    calculateRebuySimulation();
+                });
+            });
             document.getElementById('sell-calculate-button').addEventListener('click', calculateSellOrders);
             document.querySelectorAll('[data-sell-percent]').forEach(button => {
                 button.addEventListener('click', () => {
@@ -2223,6 +2515,16 @@
                     if (lastSimulationTotalBtc <= 0) return;
                     document.getElementById('sell-total-btc').value = (lastSimulationTotalBtc * percentage).toFixed(8);
                     calculateSellOrders();
+                });
+            });
+            document.querySelectorAll('[data-rebuy-drop]').forEach(button => {
+                button.addEventListener('click', () => {
+                    if (!lastSellCalculation) return;
+                    const dropPercent = Number(button.dataset.rebuyDrop);
+                    const price = lastSellCalculation.weightedAverage * (1 - dropPercent / 100);
+                    document.getElementById('rebuy-price').value = (Math.round(price * 100) / 100).toFixed(2);
+                    saveCurrentRebuySettings();
+                    calculateRebuySimulation();
                 });
             });
             calculateSellOrders();
